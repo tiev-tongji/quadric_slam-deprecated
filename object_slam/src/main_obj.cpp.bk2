@@ -20,8 +20,7 @@
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
 
-#include <pcl/PCLPointCloud2.h> Quadric_landmark* localQuadric = new Quadric_landmark();
-
+#include <pcl/PCLPointCloud2.h>
 #include <pcl/filters/approximate_voxel_grid.h>
 #include <pcl_ros/point_cloud.h>
 
@@ -302,111 +301,7 @@ void publish_all_poses(std::vector<tracking_frame*> all_frames,
     }
     objresultsFile.close();
   }
-
-  // sensor parameter for TUM cabinet data!
-  Eigen::Matrix3f calib;
-  float depth_map_scaling = 5000;
-  calib << 535.4, 0, 320.1, 0, 539.2, 247.6, 0, 0, 1;
-  set_up_calibration(calib, 480, 640);
-
-  visualization_msgs::MarkerArray finalcube_markers =
-      cuboids_to_marker(cube_landmarks_history.back(), Vector3d(0, 1, 0));
-
-  bool show_truth_cloud =
-      true;  // show point cloud using camera pose. for visualization purpose
-
-  pcl::PCLPointCloud2 pcd_cloud2;
-
-  ros::Rate loop_rate(5);  // 5
-  int frame_number = -1;
-  while (n.ok()) {
-    frame_number++;
-
-    if (0)  // directly show final results
-    {
-      pub_slam_all_poses.publish(all_pred_pose_array);
-      pub_truth_all_poses.publish(all_truth_pose_array);
-      pub_slam_path.publish(path_preds);
-      pub_truth_path.publish(path_truths);
-    }
-    pub_final_opti_cube.publish(finalcube_markers);
-
-    if (frame_number < total_frame_number) {
-      // publish cuboid landmarks, after each frame's g2o optimization
-      if (cube_landmarks_history[frame_number] != nullptr)
-        pub_history_opti_cube.publish(cuboids_to_marker(
-            cube_landmarks_history[frame_number], Vector3d(1, 0, 0)));
-
-      // publish raw detected cube in each frame, before optimization
-      if (all_frame_rawcubes.size() > 0 &&
-          all_frame_rawcubes[frame_number] != nullptr)
-        pub_frame_raw_cube.publish(cuboids_to_marker(
-            all_frame_rawcubes[frame_number], Vector3d(0, 0, 1)));
-
-      // publish camera pose estimation of this frame
-      pub_slam_odompose.publish(all_pred_pose_odoms[frame_number]);
-      pub_truth_odompose.publish(all_truth_pose_odoms[frame_number]);
-
-      // 	    std::cout<<"Frame position x/y:   "<<frame_number<<"
-      // "<<all_pred_pose_odoms[frame_number].pose.pose.position.x<<"  "<<
-      // 			  all_pred_pose_odoms[frame_number].pose.pose.position.y
-      // <<std::endl;
-
-      char frame_index_c[256];
-      sprintf(frame_index_c, "%04d", frame_number);  // format into 4 digit
-
-      cv::Mat cuboid_2d_proj_img = all_frames[frame_number]->cuboids_2d_img;
-
-      std::string raw_rgb_img_name = base_folder + "raw_imgs/" +
-                                     std::string(frame_index_c) +
-                                     "_rgb_raw.jpg";
-      cv::Mat raw_rgb_img = cv::imread(raw_rgb_img_name, 1);
-
-      if (show_truth_cloud && (truth_frame_poses.rows() > 0))
-        if (frame_number % 2 == 0)  // show point cloud every N frames
-        {
-          std::string raw_depth_img_name = base_folder + "depth_imgs/" +
-                                           std::string(frame_index_c) +
-                                           "_depth_raw.png";
-          cv::Mat raw_depth_img =
-              cv::imread(raw_depth_img_name, CV_LOAD_IMAGE_ANYDEPTH);
-          raw_depth_img.convertTo(raw_depth_img, CV_32FC1,
-                                  1.0 / depth_map_scaling, 0);
-
-          CloudXYZRGB::Ptr point_cloud(new CloudXYZRGB());
-          Eigen::Matrix4f truth_pose_matrix =
-              g2o::SE3Quat(truth_frame_poses.row(frame_number).segment<7>(1))
-                  .to_homogeneous_matrix()
-                  .cast<float>();
-
-          depth_to_cloud(raw_rgb_img, raw_depth_img, truth_pose_matrix,
-                         point_cloud,
-                         true);  // need to downsample cloud, otherwise too many
-          ros::Time curr_time = ros::Time::now();
-
-          point_cloud->header.frame_id = "/world";
-          point_cloud->header.stamp = (curr_time.toNSec() / 1000ull);
-          raw_cloud_pub.publish(point_cloud);
-        }
-
-      cv_bridge::CvImage out_image;
-      out_image.header.stamp = ros::Time::now();
-      out_image.image = cuboid_2d_proj_img;
-      out_image.encoding = sensor_msgs::image_encodings::TYPE_8UC3;
-      pub_2d_cuboid_project.publish(out_image.toImageMsg());
-    }
-
-    if (frame_number == int(all_pred_pose_odoms.size())) {
-      cout << "Finish all visulialization!" << endl;
-    }
-
-    ros::spinOnce();
-    loop_rate.sleep();
-  }
 }
-
-// NOTE offline_pred_objects and init_frame_poses are not used in
-// online_detect_mode! truth cam pose of first frame is used.
 void incremental_build_graph(Eigen::MatrixXd& offline_pred_frame_objects,
                              Eigen::MatrixXd& init_frame_poses,
                              Eigen::MatrixXd& truth_frame_poses) {
@@ -517,8 +412,8 @@ void incremental_build_graph(Eigen::MatrixXd& offline_pred_frame_objects,
           (frame_index != 0);  // first frame doesn't need to sample cam pose.
                                // could also sample. doesn't matter much
       if (detect_cuboid_obj
-              .whether_sample_cam_roll_pitch)  // sample around
-                                               // first frame's pose
+              .whether_sample_cam_roll_pitch)  // sample around first frame's
+                                               // pose
         transToWolrd = fixed_init_cam_pose_Twc.to_homogeneous_matrix();
       else
         transToWolrd = curr_cam_pose_Twc.to_homogeneous_matrix();
@@ -699,25 +594,29 @@ void incremental_build_graph(Eigen::MatrixXd& offline_pred_frame_objects,
                     cube_pose_raw_detected_history, truth_frame_poses);
 }
 
+// NOTE offline_pred_objects and init_frame_poses are not used in
+// online_detect_mode! truth cam pose of first frame is used.
+
+/*
 void incremental_build_graph_quadric(
     Eigen::MatrixXd& offline_pred_frame_objects,
     Eigen::MatrixXd& init_frame_poses,
     Eigen::MatrixXd& truth_frame_poses) {
-  Eigen::Matrix3d calib;
-  calib << 535.4, 0, 320.1,  // for TUM cabinet data.
+    Eigen::Matrix3d calib;
+    calib << 535.4, 0, 320.1,  // for TUM cabinet data.
       0, 539.2, 247.6, 0, 0, 1;
 
-  int total_frame_number = truth_frame_poses.rows();
+    int total_frame_number = truth_frame_poses.rows();
 
   // detect all frames' cuboids.
-  detect_3d_cuboid detect_cuboid_obj;
-  detect_cuboid_obj.whether_plot_detail_images = false;
-  detect_cuboid_obj.whether_plot_final_images = false;
-  detect_cuboid_obj.print_details = false;  // false  true
-  detect_cuboid_obj.set_calibration(calib);
-  detect_cuboid_obj.whether_sample_bbox_height = false;
-  detect_cuboid_obj.nominal_skew_ratio = 2;
-  detect_cuboid_obj.whether_save_final_images = true;
+  //    detect_3d_cuboid detect_cuboid_obj;
+  //    detect_cuboid_obj.whether_plot_detail_images = false;
+  //    detect_cuboid_obj.whether_plot_final_images = false;
+  //    detect_cuboid_obj.print_details = false;  // false  true
+  //    detect_cuboid_obj.set_calibration(calib);
+  //    detect_cuboid_obj.whether_sample_bbox_height = false;
+  //    detect_cuboid_obj.nominal_skew_ratio = 2;
+  //    detect_cuboid_obj.whether_save_final_images = true;
 
   // Todo:init the quadric detector
 
@@ -742,10 +641,10 @@ void incremental_build_graph_quadric(
   g2o::SE3Quat fixed_init_cam_pose_Twc(truth_frame_poses.row(0).tail<7>());
 
   // save optimization results of each frame
-  std::vector<Quadric_landmark*> quadric_pose_opti_history(
+  std::vector<quadric_landmark*> quadric_pose_opti_history(
       total_frame_number,
       nullptr);  // landmark pose after each frame's optimization
-  std::vector<Quadric_landmark*> cube_pose_raw_detected_history(
+  std::vector<object_landmark*> cube_pose_raw_detected_history(
       total_frame_number,
       nullptr);  // raw detected cuboid frame each frame. before optimization
 
@@ -773,6 +672,7 @@ void incremental_build_graph_quadric(
       curr_cam_pose_Twc =
           (odom_val * prev_pose_Tcw)
               .inverse();  // predict cam position using last transition
+matrix
     }
 
     tracking_frame_quadric* currframe = new tracking_frame_quadric();
@@ -780,157 +680,141 @@ void incremental_build_graph_quadric(
     all_frames[frame_index] = currframe;
 
     //      bool has_detected_cuboid = false;
-    bool has_detected_quadric = false;
+    bool has_detected_qudric = false;
 
-    //    g2o::cuboid cube_local_meas;
-    g2o::Quadric quadric_local_meas;
+//    g2o::cuboid cube_local_meas;
+    g20::quadric quadric_local_meas;
     double proposal_error;
     char frame_index_c[256];
     sprintf(frame_index_c, "%04d", frame_index);  // format into 4 digit
 
-    // Todo: read or detect cuboid
+    // read or detect cuboid
     if (online_detect_mode) {
-      //      // start detect cuboid
-      //      cv::Mat raw_rgb_img = cv::imread(
-      //          base_folder + "raw_imgs/" + frame_index_c + "_rgb_raw.jpg",
-      //          1);
+      // start detect cuboid
+      cv::Mat raw_rgb_img = cv::imread(
+          base_folder + "raw_imgs/" + frame_index_c + "_rgb_raw.jpg", 1);
 
-      //      // edge detection
-      //      cv::Mat all_lines_mat;
-      //      line_lbd_obj.detect_filter_lines(raw_rgb_img, all_lines_mat);
-      //      Eigen::MatrixXd all_lines_raw(all_lines_mat.rows, 4);
-      //      for (int rr = 0; rr < all_lines_mat.rows; rr++)
-      //        for (int cc = 0; cc < 4; cc++)
-      //          all_lines_raw(rr, cc) = all_lines_mat.at<float>(rr, cc);
+      // edge detection
+      cv::Mat all_lines_mat;
+      line_lbd_obj.detect_filter_lines(raw_rgb_img, all_lines_mat);
+      Eigen::MatrixXd all_lines_raw(all_lines_mat.rows, 4);
+      for (int rr = 0; rr < all_lines_mat.rows; rr++)
+        for (int cc = 0; cc < 4; cc++)
+          all_lines_raw(rr, cc) = all_lines_mat.at<float>(rr, cc);
 
-      //      // read cleaned yolo 2d object detection
-      //      Eigen::MatrixXd raw_2d_objs(10,
-      //                                  5);  // 2d rect [x1 y1 width height],
-      //                                  and prob
-      //      if (!read_all_number_txt(base_folder + "/filter_2d_obj_txts/" +
-      //                                   frame_index_c + "_yolo2_0.15.txt",
-      //                               raw_2d_objs))
-      //        return;
-      //      raw_2d_objs.leftCols<2>().array() -=
-      //          1;  // change matlab coordinate to c++, minus 1
+      // read cleaned yolo 2d object detection
+      Eigen::MatrixXd raw_2d_objs(10,
+                                  5);  // 2d rect [x1 y1 width height], and
+prob if (!read_all_number_txt(base_folder + "/filter_2d_obj_txts/" +
+                                   frame_index_c + "_yolo2_0.15.txt",
+                               raw_2d_objs))
+        return;
+      raw_2d_objs.leftCols<2>().array() -=
+          1;  // change matlab coordinate to c++, minus 1
 
-      //      Matrix4d transToWolrd;
-      //      detect_cuboid_obj.whether_sample_cam_roll_pitch =
-      //          (frame_index != 0);  // first frame doesn't need to sample cam
-      //          pose.
-      //                               // could also sample. doesn't matter much
-      //      if (detect_cuboid_obj
-      //              .whether_sample_cam_roll_pitch)  // sample around
-      //                                               // first frame's pose
-      //        transToWolrd = fixed_init_cam_pose_Twc.to_homogeneous_matrix();
-      //      else
-      //        transToWolrd = curr_cam_pose_Twc.to_homogeneous_matrix();
+      Matrix4d transToWolrd;
+      detect_cuboid_obj.whether_sample_cam_roll_pitch =
+          (frame_index != 0);  // first frame doesn't need to sample cam pose.
+                               // could also sample. doesn't matter much
+      if (detect_cuboid_obj
+              .whether_sample_cam_roll_pitch)  // sample around
+                                               // first frame's pose
+        transToWolrd = fixed_init_cam_pose_Twc.to_homogeneous_matrix();
+      else
+        transToWolrd = curr_cam_pose_Twc.to_homogeneous_matrix();
 
-      //      std::vector<ObjectSet>
-      //          frames_cuboids;  // each 2d bbox generates an ObjectSet, which
-      //          is
-      //                           // vector of sorted proposals
-      //      detect_cuboid_obj.detect_cuboid(raw_rgb_img, transToWolrd,
-      //      raw_2d_objs,
-      //                                      all_lines_raw, frames_cuboids);
-      //      currframe->quadrics_2d_img = detect_cuboid_obj.cuboids_2d_img;
+      std::vector<ObjectSet>
+          frames_cuboids;  // each 2d bbox generates an ObjectSet, which is
+                           // vector of sorted proposals
+      detect_cuboid_obj.detect_cuboid(raw_rgb_img, transToWolrd, raw_2d_objs,
+                                      all_lines_raw, frames_cuboids);
+      currframe->cuboids_2d_img = detect_cuboid_obj.cuboids_2d_img;
 
-      //      has_detected_quadric =
-      //          frames_cuboids.size() > 0 && frames_cuboids[0].size() > 0;
-      //      if (has_detected_quadric)  // prepare object measurement
-      //      {
-      //        cuboid* detected_cube =
-      //            frames_cuboids[0][0];  // NOTE this is a simple dataset,
-      //            only one
-      //                                   // landmark
+      has_detected_cuboid =
+          frames_cuboids.size() > 0 && frames_cuboids[0].size() > 0;
+      if (has_detected_cuboid)  // prepare object measurement
+      {
+        cuboid* detected_cube =
+            frames_cuboids[0][0];  // NOTE this is a simple dataset, only one
+                                   // landmark
 
-      //        g2o::cuboid cube_ground_value;  // cuboid in the local ground
-      //        frame. Vector9d cube_pose; cube_pose << detected_cube->pos(0),
-      //        detected_cube->pos(1),
-      //            detected_cube->pos(2), 0, 0, detected_cube->rotY,
-      //            detected_cube->scale(0), detected_cube->scale(1),
-      //            detected_cube->scale(2);  // xyz roll pitch yaw scale
-      //        cube_ground_value.fromMinimalVector(cube_pose);
-      //        cube_local_meas = cube_ground_value.transform_to(
-      //            curr_cam_pose_Twc);  // measurement is in local camera frame
+        g2o::cuboid cube_ground_value;  // cuboid in the local ground frame.
+        Vector9d cube_pose;
+        cube_pose << detected_cube->pos(0), detected_cube->pos(1),
+            detected_cube->pos(2), 0, 0, detected_cube->rotY,
+            detected_cube->scale(0), detected_cube->scale(1),
+            detected_cube->scale(2);  // xyz roll pitch yaw scale
+        cube_ground_value.fromMinimalVector(cube_pose);
+        cube_local_meas = cube_ground_value.transform_to(
+            curr_cam_pose_Twc);  // measurement is in local camera frame
 
-      //        if (detect_cuboid_obj
-      //                .whether_sample_cam_roll_pitch)  // if camera roll/pitch
-      //                is
-      //                                                 // sampled, transform
-      //                                                 to the
-      //                                                 // correct camera
-      //                                                 frame.
-      //        {
-      //          Vector3d new_camera_eulers =
-      //              detect_cuboid_obj.cam_pose_raw.euler_angle;
-      //          new_camera_eulers(0) += detected_cube->camera_roll_delta;
-      //          new_camera_eulers(1) += detected_cube->camera_pitch_delta;
-      //          Matrix3d rotation_new = euler_zyx_to_rot<double>(
-      //              new_camera_eulers(0), new_camera_eulers(1),
-      //              new_camera_eulers(2));
-      //          Vector3d trans = transToWolrd.col(3).head<3>();
-      //          g2o::SE3Quat curr_cam_pose_Twc_new(rotation_new, trans);
-      //          cube_local_meas =
-      //              cube_ground_value.transform_to(curr_cam_pose_Twc_new);
-      //        }
-      //        proposal_error = detected_cube->normalized_error;
-      //      }
+        if (detect_cuboid_obj
+                .whether_sample_cam_roll_pitch)  // if camera roll/pitch is
+                                                 // sampled, transform to the
+                                                 // correct camera frame.
+        {
+          Vector3d new_camera_eulers =
+              detect_cuboid_obj.cam_pose_raw.euler_angle;
+          new_camera_eulers(0) += detected_cube->camera_roll_delta;
+          new_camera_eulers(1) += detected_cube->camera_pitch_delta;
+          Matrix3d rotation_new = euler_zyx_to_rot<double>(
+              new_camera_eulers(0), new_camera_eulers(1),
+new_camera_eulers(2)); Vector3d trans = transToWolrd.col(3).head<3>();
+          g2o::SE3Quat curr_cam_pose_Twc_new(rotation_new, trans);
+          cube_local_meas =
+              cube_ground_value.transform_to(curr_cam_pose_Twc_new);
+        }
+        proposal_error = detected_cube->normalized_error;
+      }
     } else {
-      //      int cube_obs_frame_id =
-      //          offline_pred_frame_objects(offline_cube_obs_row_id, 0);
-      //      has_detected_cuboid = cube_obs_frame_id == frame_index;
-      //      if (has_detected_cuboid)  // prepare object measurement   not all
-      //      frame
-      //                                // has observation!!
-      //      {
-      //        VectorXd measure_data =
-      //            offline_pred_frame_objects.row(offline_cube_obs_row_id);
-      //        g2o::cuboid cube_ground_value;
-      //        Vector9d cube_pose;
-      //        cube_pose << measure_data(1), measure_data(2), measure_data(3),
-      //        0, 0,
-      //            measure_data(4), measure_data(5), measure_data(6),
-      //            measure_data(7);  // xyz roll pitch yaw scale
-      //        cube_ground_value.fromMinimalVector(cube_pose);
-      //        Eigen::VectorXd cam_pose_vec =
-      //        init_frame_poses.row(frame_index); g2o::SE3Quat cam_val_Twc(
-      //            cam_pose_vec.segment<7>(1));  // time x y z qx qy qz qw
-      //        cube_local_meas = cube_ground_value.transform_to(
-      //            cam_val_Twc);  // measurement is in local camera frame
-      //        proposal_error = measure_data(8);
+      int cube_obs_frame_id =
+          offline_pred_frame_objects(offline_cube_obs_row_id, 0);
+      has_detected_cuboid = cube_obs_frame_id == frame_index;
+      if (has_detected_cuboid)  // prepare object measurement   not all frame
+                                // has observation!!
+      {
+        VectorXd measure_data =
+            offline_pred_frame_objects.row(offline_cube_obs_row_id);
+        g2o::cuboid cube_ground_value;
+        Vector9d cube_pose;
+        cube_pose << measure_data(1), measure_data(2), measure_data(3), 0, 0,
+            measure_data(4), measure_data(5), measure_data(6),
+            measure_data(7);  // xyz roll pitch yaw scale
+        cube_ground_value.fromMinimalVector(cube_pose);
+        Eigen::VectorXd cam_pose_vec = init_frame_poses.row(frame_index);
+        g2o::SE3Quat cam_val_Twc(
+            cam_pose_vec.segment<7>(1));  // time x y z qx qy qz qw
+        cube_local_meas = cube_ground_value.transform_to(
+            cam_val_Twc);  // measurement is in local camera frame
+        proposal_error = measure_data(8);
 
-      //        // read offline saved 2d image
-      //        std::string detected_cube_2d_img_name =
-      //            base_folder + "pred_3d_obj_overview/" +
-      //            std::string(frame_index_c) +
-      //            "_best_objects.jpg";
-      //        currframe->cuboids_2d_img =
-      //        cv::imread(detected_cube_2d_img_name, 1);
+        // read offline saved 2d image
+        std::string detected_cube_2d_img_name =
+            base_folder + "pred_3d_obj_overview/" + std::string(frame_index_c)
++
+            "_best_objects.jpg";
+        currframe->cuboids_2d_img = cv::imread(detected_cube_2d_img_name, 1);
 
-      //        offline_cube_obs_row_id++;  // switch to next row  NOTE at most
-      //        one
-      //                                    // object one frame in this data
-      //      }
+        offline_cube_obs_row_id++;  // switch to next row  NOTE at most one
+                                    // object one frame in this data
+      }
     }
-    // Todo:
-    if (has_detected_quadric) {
-      //      Quadric_landmark* localQuadric = new Quadric_landmark();
 
-      //      localQuadric->Quadric_meas = quadric_local_meas;
-      //      localQuadric->meas_quality = (1 - proposal_error + 0.5) /
-      //                                   2;  // initial error 0-1, higher
-      //                                   worse,  now
-      //                                       // change to [0.5,1] higher,
-      //                                       better
-      //      currframe->observed_quadrics.push_back(localQuadric);
+    if (has_detected_qudric) {
+      Quadric_landmark* localQuadric = new Quadric_landmark();
+
+      localQuadric->quadric = quadric_local_meas;
+      localQuadric->meas_quality = (1 - proposal_error + 0.5) /
+                                  2;  // initial error 0-1, higher worse,  now
+                                      // change to [0.5,1] higher, better
+      currframe->observed_quadrics.push_back(localQuadric);
     }
 
     // set up g2o cube vertex. only one in this dataset
     if (frame_index == 0) {
       g2o::Quadric init_quadric_global_pose =
           quadric_local_meas.transform_from(curr_cam_pose_Twc);
-      vQuadric = new g2o::VertexQuadric();
+      vQuadric = new g2o::VertexCuboid();
       vQuadric->setEstimate(init_quadric_global_pose);
       vQuadric->setId(0);
       vQuadric->setFixed(false);
@@ -949,18 +833,18 @@ void incremental_build_graph_quadric(
     vSE3->setFixed(frame_index == 0);
 
     // add g2o camera-object measurement edges, if there is
-    if (currframe->observed_quadrics.size() > 0) {
-      Quadric_landmark* quadric_landmark_meas =
-          all_frames[frame_index]->observed_quadrics[0];
-      g2o::EdgeSE3QuadricProj* e = new g2o::EdgeSE3QuadricProj();
+    if (currframe->observed_cuboids.size() > 0) {
+      quadric_landmark* quadric_landmark_meas =
+          all_frames[frame_index]->observed_cuboids[0];
+      g2o::EdgeSE3Quadric* e = new g2o::EdgeSE3Quadric();
       e->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex*>(vSE3));
       e->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex*>(vQuadric));
-      e->setMeasurement(quadric_landmark_meas->Quadric_meas.bbox.head(4));
+      e->setMeasurement(quadric_landmark_meas->quadric_meas);
       e->setId(frame_index);
-      Vector4d inv_sigma;
-      inv_sigma << 1, 1, 1, 1;
+      Vector9d inv_sigma;
+      inv_sigma << 1, 1, 1, 1, 1, 1, 1, 1, 1;
       inv_sigma = inv_sigma * 2.0 * quadric_landmark_meas->meas_quality;
-      Matrix4d info = inv_sigma.cwiseProduct(inv_sigma).asDiagonal();
+      Matrix9d info = inv_sigma.cwiseProduct(inv_sigma).asDiagonal();
       e->setInformation(info);
       graph.addEdge(e);
     }
@@ -985,38 +869,37 @@ void incremental_build_graph_quadric(
     graph.initializeOptimization();
     graph.optimize(5);  // do optimization!
 
-    // Todo: retrieve the optimization result, for debug visualization
-    //    for (int j = 0; j <= frame_index; j++) {
-    //      all_frames[j]->cam_pose_Tcw =
-    //      all_frames[j]->pose_vertex->estimate(); all_frames[j]->cam_pose_Twc
-    //      = all_frames[j]->cam_pose_Tcw.inverse();
-    //    }
-    //    object_landmark* current_landmark = new object_landmark();
-    //    current_landmark->cube_vertex = new g2o::VertexCuboid();
-    //    current_landmark->cube_vertex->setEstimate(vCube->estimate());
-    //    cube_pose_opti_history[frame_index] = current_landmark;
+    // retrieve the optimization result, for debug visualization
+    for (int j = 0; j <= frame_index; j++) {
+      all_frames[j]->cam_pose_Tcw = all_frames[j]->pose_vertex->estimate();
+      all_frames[j]->cam_pose_Twc = all_frames[j]->cam_pose_Tcw.inverse();
+    }
+    object_landmark* current_landmark = new object_landmark();
+    current_landmark->cube_vertex = new g2o::VertexCuboid();
+    current_landmark->cube_vertex->setEstimate(vCube->estimate());
+    cube_pose_opti_history[frame_index] = current_landmark;
 
-    //    if (all_frames[frame_index]->observed_cuboids.size() > 0) {
-    //      object_landmark* cube_landmark_meas =
-    //          all_frames[frame_index]->observed_cuboids[0];
-    //      g2o::cuboid local_cube = cube_landmark_meas->cube_meas;
+    if (all_frames[frame_index]->observed_cuboids.size() > 0) {
+      object_landmark* cube_landmark_meas =
+          all_frames[frame_index]->observed_cuboids[0];
+      g2o::cuboid local_cube = cube_landmark_meas->cube_meas;
 
-    //      g2o::cuboid global_cube =
-    //          local_cube.transform_from(all_frames[frame_index]->cam_pose_Twc);
-    //      object_landmark* tempcuboids2 = new object_landmark();
-    //      tempcuboids2->cube_vertex = new g2o::VertexCuboid();
-    //      tempcuboids2->cube_vertex->setEstimate(global_cube);
-    //      cube_pose_raw_detected_history[frame_index] = tempcuboids2;
-    //    } else
-    //      cube_pose_raw_detected_history[frame_index] = nullptr;
-    //  }
-
-    //  cout << "Finish all optimization! Begin visualization." << endl;
-
-    //  publish_all_poses(all_frames, cube_pose_opti_history,
-    //                    cube_pose_raw_detected_history, truth_frame_poses);
+      g2o::cuboid global_cube =
+          local_cube.transform_from(all_frames[frame_index]->cam_pose_Twc);
+      object_landmark* tempcuboids2 = new object_landmark();
+      tempcuboids2->cube_vertex = new g2o::VertexCuboid();
+      tempcuboids2->cube_vertex->setEstimate(global_cube);
+      cube_pose_raw_detected_history[frame_index] = tempcuboids2;
+    } else
+      cube_pose_raw_detected_history[frame_index] = nullptr;
   }
+
+  cout << "Finish all optimization! Begin visualization." << endl;
+
+  publish_all_poses(all_frames, cube_pose_opti_history,
+                    cube_pose_raw_detected_history, truth_frame_poses);
 }
+*/
 int main(int argc, char* argv[]) {
   ros::init(argc, argv, "object_slam");
 
@@ -1035,8 +918,8 @@ int main(int argc, char* argv[]) {
     ROS_WARN_STREAM("Offline read object mode !!\n");
 
   // NOTE important
-  // in online mode, pred_frame_objects and init_frame_poses are not used. only
-  // first frame of truth_frame_poses is used.
+  // in online mode, pred_frame_objects and init_frame_poses are not used.
+  // only first frame of truth_frame_poses is used.
 
   std::string pred_objs_txt =
       base_folder +
@@ -1047,7 +930,8 @@ int main(int argc, char* argv[]) {
                                   // (x y yaw=0, truth roll/pitch/height)
   std::string truth_camera_pose = base_folder + "truth_cam_poses.txt";
   Eigen::MatrixXd pred_frame_objects(
-      100, 10);  // 100 is some large row number, each row in txt has 10 numbers
+      100,
+      10);  // 100 is some large row number, each row in txt has 10 numbers
   Eigen::MatrixXd init_frame_poses(100, 8);
   Eigen::MatrixXd truth_frame_poses(100, 8);
 
