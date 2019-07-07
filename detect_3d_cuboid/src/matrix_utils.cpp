@@ -12,7 +12,7 @@
 #include <string> 
 #include <sstream>
 #include <ctime>
-
+#include<vector>
 
 using namespace Eigen;
 

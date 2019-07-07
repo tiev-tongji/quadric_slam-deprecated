@@ -7,7 +7,7 @@
 #include <string> 
 #include <sstream>
 #include <ctime>
-
+#include<numeric>
 // opencv pcl
 #include <opencv/cv.h>
 #include <opencv2/core/core.hpp>
@@ -478,5 +478,6 @@ void detect_3d_cuboid::detect_cuboid(const cv::Mat& rgb_img, const Matrix4d& tra
 	  }
       }
 }
+
 
 
