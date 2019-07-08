@@ -17,6 +17,8 @@ public:
     
     std::vector<object_landmark*> observed_cuboids; // generated cuboid from this frame. maynot be actual SLAM landmark
     
+
+    
     g2o::SE3Quat cam_pose_Tcw;	     // optimized pose  world to cam
     g2o::SE3Quat cam_pose_Twc;	     // optimized pose  cam to world
     

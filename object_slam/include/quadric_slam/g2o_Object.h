@@ -19,6 +19,7 @@
 typedef Eigen::Matrix<double, 9, 1> Vector9d;
 typedef Eigen::Matrix<double, 10, 1> Vector10d;
 typedef Eigen::Matrix<double, 5, 1> Vector5d;
+typedef Eigen::Matrix<double, 4, 1> Vector4d;
 namespace g2o {
 
 class Quadric {
@@ -220,7 +221,7 @@ class Quadric {
 
   Matrix3d toConic(const SE3Quat& campose_cw, const Matrix3d& Kalib) const {
     Eigen::Matrix<double, 3, 4> P =
-        Kalib * campose_cw.to_homogeneous_matrix().block(0, 0, 3, 4);
+        Kalib * campose_cw.to_homogeneous_matrix().block(0, 0, 3, 4);  //Todo:BUG!! maybe campose_cw.inv()
     Matrix4d symMat = this->toSymMat();
     Matrix3d conic = P * symMat * P.transpose();
     return conic;
