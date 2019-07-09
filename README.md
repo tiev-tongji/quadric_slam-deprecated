@@ -32,13 +32,11 @@ cd cube_slam
 sh install_dependenices.sh
 ```
 
-
 ### Compile
 ```bash
 cd ~/cubeslam_ws
 catkin_make -j4
 ```
-
 
 ## Running #
 ```bash
@@ -47,13 +45,26 @@ roslaunch object_slam object_slam_example.launch
 ```
 You will see results in Rviz. Default rviz file is for ros indigo. A kinetic version is also provided.
 
+## Change Log
 
-### Notes
+### v0.1
 
-1. This package utilizes cuboid object as the only SLAM landmark. The integration with ORB SLAM point features is not provided yet. Therefore, it may not produce accurate results for general scenarios.
+2019/07/09
 
-2. In the launch file (```object_slam_example.launch```), if ```online_detect_mode=false```, it requires the matlab saved cuboid images, cuboid pose txts and camera pose txts.  if ```true```, it reads the 2D object bounding box txt then online detects 3D cuboids poses using C++.
+- Finished basic structure
 
-3. ```object_slam/data/``` contains all the preprocessing data. ```depth_imgs/``` is just for visualization. ```pred_3d_obj_overview/``` is the offline matlab cuboid detection images. ```detect_cuboids_saved.txt``` is the offline cuboid poses in local ground frame, in the format "3D position, 1D yaw, 3D scale, score". ```pop_cam_poses_saved.txt``` is the camera poses to generate offline cuboids (camera x/y/yaw = 0, truth camera roll/pitch/height) ```truth_cam_poses.txt``` is mainly used for visulization and comparison.
+- Update README
 
-	```filter_2d_obj_txts/``` is the 2D object bounding box txt. We use Yolo to detect 2D objects. Other similar methods can also be used. ```preprocessing/2D_object_detect``` is our prediction code to save images and txts. Sometimes there might be overlapping box of the same object instance. We need to filter and clean some detections. See the [```filter_match_2d_boxes.m```](https://github.com/shichaoy/matlab_cuboid_detect/blob/master/filter_match_2d_boxes.m) in our matlab detection package.
+### v0.0
+
+2019/07/07
+
+- Initial Commit
+
+## TODO List
+- [ ] Generate and update quadrics (Quadric_landmark.quadric_detection()
+- [ ] Score quadrics
+- [ ] Data Association
+- [ ] Visualization the quadrics and camera pose(publish_all_poses())
+- [ ] Offline mode
+
