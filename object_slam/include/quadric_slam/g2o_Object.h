@@ -208,7 +208,7 @@ class Quadric {
     centreAtOrigin(0, 0) = pow(scale(0), 2);
     centreAtOrigin(1, 1) = pow(scale(1), 2);
     centreAtOrigin(2, 2) = pow(scale(2), 2);
-    centreAtOrigin(3, 4) = 1;
+    centreAtOrigin(3, 4) = -1;
     Matrix4d Z;
     Z = pose.to_homogeneous_matrix();
     res = Z * centreAtOrigin * Z.transpose();
