@@ -726,7 +726,9 @@ void incremental_build_graph_quadric(
   g2o::SE3Quat fixed_init_cam_pose_Twc(truth_frame_poses.row(0).tail<7>());
 
   // int offline_cube_obs_row_id = 0; //used in offline mode
+
   std::vector<tracking_frame_quadric*> all_frames;
+  std::vector<Quadric_landmark*> all_landmark;
 
   // process each frame online and incrementally
   for (int frame_index = 0; frame_index < total_frame_number; frame_index++) {
@@ -752,11 +754,8 @@ void incremental_build_graph_quadric(
     tracking_frame_quadric* currframe = new tracking_frame_quadric();
     currframe->frame_seq_id = frame_index;
     all_frames.push_back(currframe);
+    int totall_class = 0;
 
-    //      bool has_detected_cuboid = false;
-    bool has_detected_quadric = false;
-
-    //    g2o::cuboid cube_local_meas;
     g2o::Quadric quadric_local_meas;
     double proposal_error;
     char frame_index_c[256];
@@ -774,8 +773,8 @@ void incremental_build_graph_quadric(
       //        for (int cc = 0; cc < 4; cc++)
       //          all_lines_raw(rr, cc) = all_lines_mat.at<float>(rr, cc);
 
-      // read cleaned yolo 2d object detection
-      Eigen::MatrixXd raw_2d_objs(10,
+      // read cleaned yolo 2d object detection, !!! assume only one bbox
+      Eigen::MatrixXd raw_2d_objs(1,
                                   5);  // 2d rect [x1 y1 width height], and prob
       if (!read_all_number_txt(base_folder + "/filter_2d_obj_txts/" +
                                    frame_index_c + "_yolo2_0.15.txt",
@@ -784,12 +783,27 @@ void incremental_build_graph_quadric(
       raw_2d_objs.leftCols<2>().array() -=
           1;  // change matlab coordinate to c++, minus 1
 
-      for (int i = 0; i < 10; i++) {
+      for (int i = 0; i < 1; i++) {
         Detection_result* tempDR =
             new Detection_result(raw_2d_objs.block(i, 0, 1, 5), frame_index);
         currframe->detect_result.push_back(tempDR);
+        // Todo:Data Association,give Detection_result a class
+        for (auto landmark = all_landmark.begin();
+             landmark != all_landmark.end(); ++landmark) {
+          if (1 /*association success*/) {
+            tempDR->class_id = (*landmark)->class_id;
+            break;
+          }
+        }
+        if (totall_class == 0 /*|| new class*/) {
+          tempDR->class_id = totall_class;
+          Quadric_landmark* newLandmark = new Quadric_landmark();
+          newLandmark->class_id = totall_class;
+          totall_class++;
+          newLandmark->quadric_tracking.push_back(tempDR);
+          all_landmark.push_back(newLandmark);
+        }
       }
-      // Todo:Data Association,give Detection_result a class
 
       // detect_cuboid_obj.detect_cuboid(raw_rgb_img, transToWolrd, raw_2d_objs,
       //                                 all_lines_raw, frames_cuboids);
@@ -837,8 +851,7 @@ void incremental_build_graph_quadric(
     graph.addVertex(vSE3);
 
     vSE3->setEstimate(
-        curr_cam_pose_Twc
-            .inverse());  // g2o vertex usually stores world to camera pose.
+        curr_cam_pose_Twc);  // g2o vertex usually stores world to camera pose.
     vSE3->setFixed(frame_index == 0);
 
     // camera vertex, add cam-cam odometry edges
@@ -850,10 +863,12 @@ void incremental_build_graph_quadric(
                           all_frames[frame_index]->pose_vertex));
       e->setMeasurement(odom_val);
 
-      e->setId(total_frame_number + frame_index);
+      e->setId(total_frame_number + frame_index);  //????
+
       Vector6d inv_sigma;
       inv_sigma << 1, 1, 1, 1, 1, 1;
       inv_sigma = inv_sigma * 1.0;
+
       Matrix6d info = inv_sigma.cwiseProduct(inv_sigma).asDiagonal();
       e->setInformation(info);
       graph.addEdge(e);
@@ -866,18 +881,80 @@ void incremental_build_graph_quadric(
       all_frames[j]->cam_pose_Tcw = all_frames[j]->pose_vertex->estimate();
       all_frames[j]->cam_pose_Twc = all_frames[j]->cam_pose_Tcw.inverse();
     }
+
     // update landmark
     for (auto bbox = currframe->detect_result.begin();
          bbox != currframe->detect_result.end(); ++bbox)
-      for (auto landmark = currframe->observed_quadrics.begin();
-           landmark != currframe->observed_quadrics.end(); ++landmark)
+      for (auto landmark = all_landmark.begin(); landmark != all_landmark.end();
+           ++landmark)
         if ((*landmark)->class_id == (*bbox)->class_id) {
           (*landmark)->quadric_tracking.push_back(*bbox);
-          if ((*landmark)->quadric_tracking.size() > 3)
-            if ((*landmark)->quadric_detection() == 1)  // new v
+          if ((*landmark)->quadric_tracking.size() > 3) {
+            vector<Eigen::Matrix<double, 3, 4>,
+                   Eigen::aligned_allocator<Eigen::Matrix<double, 3, 4>>>
+                projection_matrix;
+            for (auto matrix = (*landmark)->quadric_tracking.begin();
+                 matrix != (*landmark)->quadric_tracking.end(); ++matrix) {
+              projection_matrix.push_back(
+                  all_frames[(*matrix)->frame_seq_id]
+                      ->cam_pose_Twc.to_homogeneous_matrix()
+                      .block(0, 0, 3, 4));
+            }
+            (*landmark)->quadric_detection(projection_matrix);
+            if ((*landmark)->isDetected == NEW_QUADRIC) {  // new v
               graph.addVertex((*landmark)->quadric_vertex);
-        }
+              (*landmark)->quadric_vertex->setId(123);  // Todo
 
+              for (auto deteResult = (*landmark)->quadric_tracking.begin();
+                   deteResult != (*landmark)->quadric_tracking.end();
+                   ++deteResult) {
+                g2o::EdgeSE3QuadricProj* e = new g2o::EdgeSE3QuadricProj();
+                e->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex*>(
+                                    (*landmark)->quadric_vertex));
+                e->setVertex(
+                    1,
+                    dynamic_cast<g2o::OptimizableGraph::Vertex*>(
+                        all_frames[(*deteResult)->frame_seq_id]->pose_vertex));
+                e->setMeasurement((*deteResult)->bbox);
+                e->setId(total_frame_number + frame_index);  //????
+                Vector4d inv_sigma;
+                inv_sigma << 1, 1, 1, 1;
+                inv_sigma = inv_sigma * 2.0 * (*landmark)->meas_quality *
+                            (*deteResult)->prop;
+                Matrix4d info = inv_sigma.cwiseProduct(inv_sigma).asDiagonal();
+                e->setInformation(info);
+                graph.addEdge(e);
+              }
+            } else if ((*landmark)->isDetected == UPDATE_QUADRIC) {
+              g2o::EdgeSE3QuadricProj* e = new g2o::EdgeSE3QuadricProj();
+              e->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex*>(
+                                  (*landmark)->quadric_vertex));
+              e->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex*>(
+                                  currframe->pose_vertex));
+              e->setMeasurement((*bbox)->bbox);
+              e->setId(total_frame_number + frame_index);  //????
+              Vector4d inv_sigma;
+              inv_sigma << 1, 1, 1, 1;
+              inv_sigma =
+                  inv_sigma * 2.0 * (*landmark)->meas_quality * (*bbox)->prop;
+              Matrix4d info = inv_sigma.cwiseProduct(inv_sigma).asDiagonal();
+              e->setInformation(info);
+              graph.addEdge(e);
+            }
+          }
+        }
+    graph.initializeOptimization();
+    graph.optimize(5);  // do optimization!
+
+    // update camera pose and quadric
+    for (int j = 0; j <= frame_index; j++) {
+      all_frames[j]->cam_pose_Tcw = all_frames[j]->pose_vertex->estimate();
+      all_frames[j]->cam_pose_Twc = all_frames[j]->cam_pose_Tcw.inverse();
+    }
+    for (auto landmark = all_landmark.begin(); landmark != all_landmark.end();
+         ++landmark) {
+      (*landmark)->Quadric_meas = (*landmark)->quadric_vertex->estimate();
+    }
     // Todo:visualization
     //  cout << "Finish all optimization! Begin visualization." << endl;
 

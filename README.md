@@ -47,6 +47,14 @@ You will see results in Rviz. Default rviz file is for ros indigo. A kinetic ver
 
 ## Change Log
 
+### v0.2
+
+2019/07/12
+
+- Finished quadric detector
+
+- Update README
+
 ### v0.1
 
 2019/07/09
@@ -62,9 +70,11 @@ You will see results in Rviz. Default rviz file is for ros indigo. A kinetic ver
 - Initial Commit
 
 ## TODO List
-- [ ] Generate and update quadrics (Quadric_landmark.quadric_detection()
-- [ ] Score quadrics
-- [ ] Data Association
-- [ ] Visualization the quadrics and camera pose(publish_all_poses())
-- [ ] Offline mode
+- [X] Generate and update quadrics (Quadric_landmark.quadric_detection().
+- [ ] Score quadrics.
+- [ ] Data Association.
+- [ ] Visualization the quadrics and camera pose(publish_all_poses()).
+- [ ] Detect online with yolo.
+- [ ] Offline mode.
+- [ ] Find the algorithm to determine the ID of vertex and edge.
 

@@ -26,8 +26,6 @@ class Quadric {
  public:
   SE3Quat pose;
   Vector3d scale;  // semi-axis a,b,c
-  Vector5d bbox;   // [center.x center.y width height pro]
-
   Quadric() {
     pose = SE3Quat();
     scale.setZero();
@@ -221,7 +219,8 @@ class Quadric {
 
   Matrix3d toConic(const SE3Quat& campose_cw, const Matrix3d& Kalib) const {
     Eigen::Matrix<double, 3, 4> P =
-        Kalib * campose_cw.to_homogeneous_matrix().block(0, 0, 3, 4);  //Todo:BUG!! maybe campose_cw.inv()
+        Kalib * campose_cw.to_homogeneous_matrix().block(
+                    0, 0, 3, 4);  // Todo:BUG!! maybe campose_cw.inv()
     Matrix4d symMat = this->toSymMat();
     Matrix3d conic = P * symMat * P.transpose();
     return conic;
@@ -308,6 +307,7 @@ class VertexQuadric : public BaseVertex<9, Quadric>  // NOTE  this vertex stores
 
 // camera -object 2D projection error, rectangle difference, could also change
 // to iou
+
 class EdgeSE3QuadricProj
     : public BaseBinaryEdge<4, Vector4d, VertexSE3Expmap, VertexQuadric> {
  public:
