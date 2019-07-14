@@ -26,7 +26,7 @@ class Quadric_landmark {
   Quadric_landmark() { isDetected = NO_QUADRIC; }
   g2o::Quadric Quadric_meas;  // cube_value
   g2o::VertexQuadric* quadric_vertex;
-  double meas_quality;  // [0,1] the higher, the better
+  double meas_quality = 1;  // [0,1] the higher, the better
   std::vector<Detection_result*> quadric_tracking;
   DETECT_RESULT isDetected;  //
   int class_id;

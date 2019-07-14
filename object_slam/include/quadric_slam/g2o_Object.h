@@ -106,67 +106,70 @@ class Quadric {
     return res;
   }
 
-  // actual error between two qudrics.
-  Vector9d quadric_log_error(const Quadric& newone) const {
-    Vector9d res;
-    SE3Quat pose_diff = newone.pose.inverse() * this->pose;
-    res.head<6>() =
-        pose_diff
-            .log();  // treat as se3 log error. could also just use yaw error
-    res.tail<3>() = this->scale - newone.scale;
-    return res;
-  }
+  //  // actual error between two qudrics.
+  //  Vector9d quadric_log_error(const Quadric& newone) const {
+  //    Vector9d res;
+  //    SE3Quat pose_diff = newone.pose.inverse() * this->pose;
+  //    res.head<6>() =
+  //        pose_diff
+  //            .log();  // treat as se3 log error. could also just use yaw
+  //            error
+  //    res.tail<3>() = this->scale - newone.scale;
+  //    return res;
+  //  }
+  //  // Todo
+  //  // function called by g2o.
+  //  Vector9d min_log_error(const Quadric& newone,
+  //                         bool print_details = false) const {
+  //    bool whether_rotate_cubes =
+  //        true;  // whether rotate cube to find smallest error
+  //    if (!whether_rotate_cubes)
+  //      return quadric_log_error(newone);
 
-  // Todo
-  // function called by g2o.
-  Vector9d min_log_error(const Quadric& newone,
-                         bool print_details = false) const {
-    bool whether_rotate_cubes =
-        true;  // whether rotate cube to find smallest error
-    if (!whether_rotate_cubes)
-      return quadric_log_error(newone);
+  //    // NOTE rotating cuboid... since we cannot determine the front face
+  //    // consistenly, different front faces indicate different yaw, scale
+  //    // representation. need to rotate all 360 degrees (global cube might
+  //    be
+  //    // quite different from local cube) this requires the sequential
+  //    object
+  //    // insertion. In this case, object yaw practically should not change
+  //    much.
+  //    // If we observe a jump, we can use code here to adjust the yaw.
+  //    Vector4d rotate_errors_norm;
+  //    Vector4d rotate_angles(-1, 0, 1, 2);  // rotate -90 0 90 180
+  //    Eigen::Matrix<double, 9, 4> rotate_errors;
+  //    for (int i = 0; i < rotate_errors_norm.rows(); i++) {
+  //      Quadric rotated_quadric = newone.rotate_quadric(
+  //          rotate_angles(i) * M_PI / 2.0);  // rotate new cuboids
+  //      Vector9d quadric_error = this->quadric_log_error(rotated_quadric);
+  //      rotate_errors_norm(i) = quadric_error.norm();
+  //      rotate_errors.col(i) = quadric_error;
+  //    }
+  //    int min_label;
+  //    rotate_errors_norm.minCoeff(&min_label);
+  //    if (print_details)
+  //      if (min_label != 1)
+  //        std::cout << "Rotate Quadric   " << min_label << std::endl;
+  //    return rotate_errors.col(min_label);
+  //  }
 
-    // NOTE rotating cuboid... since we cannot determine the front face
-    // consistenly, different front faces indicate different yaw, scale
-    // representation. need to rotate all 360 degrees (global cube might be
-    // quite different from local cube) this requires the sequential object
-    // insertion. In this case, object yaw practically should not change much.
-    // If we observe a jump, we can use code here to adjust the yaw.
-    Vector4d rotate_errors_norm;
-    Vector4d rotate_angles(-1, 0, 1, 2);  // rotate -90 0 90 180
-    Eigen::Matrix<double, 9, 4> rotate_errors;
-    for (int i = 0; i < rotate_errors_norm.rows(); i++) {
-      Quadric rotated_quadric = newone.rotate_quadric(
-          rotate_angles(i) * M_PI / 2.0);  // rotate new cuboids
-      Vector9d quadric_error = this->quadric_log_error(rotated_quadric);
-      rotate_errors_norm(i) = quadric_error.norm();
-      rotate_errors.col(i) = quadric_error;
-    }
-    int min_label;
-    rotate_errors_norm.minCoeff(&min_label);
-    if (print_details)
-      if (min_label != 1)
-        std::cout << "Rotate Quadric   " << min_label << std::endl;
-    return rotate_errors.col(min_label);
-  }
+  //  // change front face by rotate along current body z axis. another way of
+  //  // representing cuboid. representing same cuboid (IOU always 1)
+  //  Quadric rotate_quadric(double yaw_angle)
+  //      const  // to deal with different front surface of cuboids
+  //  {
+  //    Quadric res;
+  //    SE3Quat rot(
+  //        Eigen::Quaterniond(cos(yaw_angle * 0.5), 0, 0, sin(yaw_angle *
+  //        0.5)), Vector3d(0, 0, 0));  // change yaw to rotation.
+  //    res.pose = this->pose * rot;
+  //    res.scale = this->scale;
+  //    if ((yaw_angle == M_PI / 2.0) || (yaw_angle == -M_PI / 2.0) ||
+  //        (yaw_angle == 3 * M_PI / 2.0))
+  //      std::swap(res.scale(0), res.scale(1));
 
-  // change front face by rotate along current body z axis. another way of
-  // representing cuboid. representing same cuboid (IOU always 1)
-  Quadric rotate_quadric(double yaw_angle)
-      const  // to deal with different front surface of cuboids
-  {
-    Quadric res;
-    SE3Quat rot(
-        Eigen::Quaterniond(cos(yaw_angle * 0.5), 0, 0, sin(yaw_angle * 0.5)),
-        Vector3d(0, 0, 0));  // change yaw to rotation.
-    res.pose = this->pose * rot;
-    res.scale = this->scale;
-    if ((yaw_angle == M_PI / 2.0) || (yaw_angle == -M_PI / 2.0) ||
-        (yaw_angle == 3 * M_PI / 2.0))
-      std::swap(res.scale(0), res.scale(1));
-
-    return res;
-  }
+  //    return res;
+  //  }
 
   // transform a local cuboid to global cuboid  Twc is camera pose. from camera
   // to world
@@ -217,18 +220,18 @@ class Quadric {
 
   // get rectangles after projection  [topleft, bottomright]
 
-  Matrix3d toConic(const SE3Quat& campose_cw, const Matrix3d& Kalib) const {
+  Matrix3d toConic(const SE3Quat& campose_wc, const Matrix3d& Kalib) const {
     Eigen::Matrix<double, 3, 4> P =
-        Kalib * campose_cw.to_homogeneous_matrix().block(
-                    0, 0, 3, 4);  // Todo:BUG!! maybe campose_cw.inv()
+        Kalib * campose_wc.to_homogeneous_matrix().block(
+                    0, 0, 3, 4);  // Todo:BUG!! maybe campose_cw
     Matrix4d symMat = this->toSymMat();
     Matrix3d conic = P * symMat * P.transpose();
     return conic;
   }
 
-  Vector4d projectOntoImageRect(const SE3Quat& campose_cw,
+  Vector4d projectOntoImageRect(const SE3Quat& campose_wc,
                                 const Matrix3d& Kalib) const {
-    Matrix3d conic = this->toConic(campose_cw, Kalib);
+    Matrix3d conic = this->toConic(campose_wc, Kalib);
     Vector6d c;
     c << conic(0, 0), conic(0, 1) / 2, conic(1, 1), conic(0, 2) / 2,
         conic(1, 2) / 2, conic(2, 2);
@@ -260,10 +263,10 @@ class Quadric {
   }
 
   // get rectangles after projection  [center, width, height]
-  Vector4d projectOntoImageBbox(const SE3Quat& campose_cw,
+  Vector4d projectOntoImageBbox(const SE3Quat& campose_wc,
                                 const Matrix3d& Kalib) const {
     Vector4d rect_project = projectOntoImageRect(
-        campose_cw, Kalib);  // top_left, bottom_right  x1 y1 x2 y2
+        campose_wc, Kalib);  // top_left, bottom_right  x1 y1 x2 y2
     Vector2d rect_center =
         (rect_project.tail<2>() + rect_project.head<2>()) / 2;
     Vector2d widthheight = rect_project.tail<2>() - rect_project.head<2>();
@@ -324,11 +327,11 @@ class EdgeSE3QuadricProj
     const VertexQuadric* quadricVertex = static_cast<const VertexQuadric*>(
         _vertices[1]);  //  object pose to world
 
-    SE3Quat cam_pose_Tcw = SE3Vertex->estimate();
+    SE3Quat cam_pose_Twc = SE3Vertex->estimate();
     Quadric global_quadric = quadricVertex->estimate();
 
     Vector4d rect_project = global_quadric.projectOntoImageBbox(
-        cam_pose_Tcw, Kalib);  // center, width, height
+        cam_pose_Twc, Kalib);  // center, width, height
 
     _error = rect_project - _measurement;
   }

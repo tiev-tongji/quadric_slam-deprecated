@@ -729,6 +729,12 @@ void incremental_build_graph_quadric(
 
   std::vector<tracking_frame_quadric*> all_frames;
   std::vector<Quadric_landmark*> all_landmark;
+  int totall_class = 0;
+  int vertexID = 0;
+  int edgeID = 0;
+
+  cout << "total_frame_number: " << total_frame_number << endl;
+  cout << "fixed_init_cam_pose_Twc: " << fixed_init_cam_pose_Twc << endl;
 
   // process each frame online and incrementally
   for (int frame_index = 0; frame_index < total_frame_number; frame_index++) {
@@ -754,7 +760,6 @@ void incremental_build_graph_quadric(
     tracking_frame_quadric* currframe = new tracking_frame_quadric();
     currframe->frame_seq_id = frame_index;
     all_frames.push_back(currframe);
-    int totall_class = 0;
 
     g2o::Quadric quadric_local_meas;
     double proposal_error;
@@ -787,6 +792,7 @@ void incremental_build_graph_quadric(
         Detection_result* tempDR =
             new Detection_result(raw_2d_objs.block(i, 0, 1, 5), frame_index);
         currframe->detect_result.push_back(tempDR);
+        tempDR->frame_seq_id = frame_index;
         // Todo:Data Association,give Detection_result a class
         for (auto landmark = all_landmark.begin();
              landmark != all_landmark.end(); ++landmark) {
@@ -847,9 +853,8 @@ void incremental_build_graph_quadric(
     // set up g2o camera vertex
     g2o::VertexSE3Expmap* vSE3 = new g2o::VertexSE3Expmap();
     currframe->pose_vertex = vSE3;
-    vSE3->setId(frame_index + 1);
+    vSE3->setId(vertexID++);
     graph.addVertex(vSE3);
-
     vSE3->setEstimate(
         curr_cam_pose_Twc);  // g2o vertex usually stores world to camera pose.
     vSE3->setFixed(frame_index == 0);
@@ -863,7 +868,7 @@ void incremental_build_graph_quadric(
                           all_frames[frame_index]->pose_vertex));
       e->setMeasurement(odom_val);
 
-      e->setId(total_frame_number + frame_index);  //????
+      e->setId(edgeID++);
 
       Vector6d inv_sigma;
       inv_sigma << 1, 1, 1, 1, 1, 1;
@@ -903,7 +908,7 @@ void incremental_build_graph_quadric(
             (*landmark)->quadric_detection(projection_matrix);
             if ((*landmark)->isDetected == NEW_QUADRIC) {  // new v
               graph.addVertex((*landmark)->quadric_vertex);
-              (*landmark)->quadric_vertex->setId(123);  // Todo
+              (*landmark)->quadric_vertex->setId(vertexID++);  // Todo
 
               for (auto deteResult = (*landmark)->quadric_tracking.begin();
                    deteResult != (*landmark)->quadric_tracking.end();
@@ -916,7 +921,7 @@ void incremental_build_graph_quadric(
                     dynamic_cast<g2o::OptimizableGraph::Vertex*>(
                         all_frames[(*deteResult)->frame_seq_id]->pose_vertex));
                 e->setMeasurement((*deteResult)->bbox);
-                e->setId(total_frame_number + frame_index);  //????
+                e->setId(edgeID++);
                 Vector4d inv_sigma;
                 inv_sigma << 1, 1, 1, 1;
                 inv_sigma = inv_sigma * 2.0 * (*landmark)->meas_quality *
@@ -932,7 +937,7 @@ void incremental_build_graph_quadric(
               e->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex*>(
                                   currframe->pose_vertex));
               e->setMeasurement((*bbox)->bbox);
-              e->setId(total_frame_number + frame_index);  //????
+              e->setId(edgeID++);  //????
               Vector4d inv_sigma;
               inv_sigma << 1, 1, 1, 1;
               inv_sigma =
@@ -943,6 +948,7 @@ void incremental_build_graph_quadric(
             }
           }
         }
+
     graph.initializeOptimization();
     graph.optimize(5);  // do optimization!
 
@@ -1007,9 +1013,9 @@ int main(int argc, char* argv[]) {
             << init_frame_poses.rows() << "  " << truth_frame_poses.rows()
             << std::endl;
 
-  incremental_build_graph(pred_frame_objects, init_frame_poses,
-                          truth_frame_poses);
-  //  incremental_build_graph_quadric(pred_frame_objects, init_frame_poses,
-  //                                  truth_frame_poses);
+  //  incremental_build_graph(pred_frame_objects, init_frame_poses,
+  //                          truth_frame_poses);
+  incremental_build_graph_quadric(pred_frame_objects, init_frame_poses,
+                                  truth_frame_poses);
   return 0;
 }

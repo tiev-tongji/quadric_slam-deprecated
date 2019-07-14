@@ -79,5 +79,5 @@ You will see results in Rviz. Default rviz file is for ros indigo. A kinetic ver
 - [ ] Visualization the quadrics and camera pose(publish_all_poses()).
 - [ ] Detect online with yolo.
 - [ ] Offline mode.
-- [ ] Find the algorithm to determine the ID of vertex and edge.
+- [X] Find the algorithm to determine the ID of vertex and edge.
 
