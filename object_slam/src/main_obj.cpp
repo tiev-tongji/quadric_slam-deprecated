@@ -794,8 +794,8 @@ void incremental_build_graph_quadric(
   // process each frame online and incrementally
   for (int frame_index = 0; frame_index < total_frame_number; frame_index++) {
     cout << "loop begin" << endl;
-    g2o::SE3Quat curr_cam_pose_Twc;
-    g2o::SE3Quat odom_val;  // from previous frame to current frame
+    g2o::SE3Quat curr_cam_pose_Twc;  //  camera to world!!!
+    g2o::SE3Quat odom_val;           // from previous frame to current frame
 
     if (frame_index == 0)
       curr_cam_pose_Twc = fixed_init_cam_pose_Twc;
@@ -913,7 +913,8 @@ void incremental_build_graph_quadric(
     vSE3->setId(vertexID++);
     graph.addVertex(vSE3);
     vSE3->setEstimate(
-        curr_cam_pose_Twc);  // g2o vertex usually stores world to camera pose.
+        curr_cam_pose_Twc
+            .inverse());  // g2o vertex usually stores world to camera pose.
     vSE3->setFixed(frame_index == 0);
 
     cout << "add cam-cam odometry edges" << endl;
@@ -953,7 +954,7 @@ void incremental_build_graph_quadric(
         if ((*landmark)->class_id == (*bbox)->class_id) {
           (*landmark)->quadric_tracking.push_back(*bbox);
 
-          if ((*landmark)->quadric_tracking.size() > 3) {
+          if ((*landmark)->quadric_tracking.size() > 2) {
             vector<Eigen::Matrix<double, 3, 4>,
                    Eigen::aligned_allocator<Eigen::Matrix<double, 3, 4>>>
                 projection_matrix;
@@ -962,7 +963,7 @@ void incremental_build_graph_quadric(
                  matrix != (*landmark)->quadric_tracking.end(); ++matrix) {
               projection_matrix.push_back(
                   all_frames[(*matrix)->frame_seq_id]
-                      ->cam_pose_Twc.to_homogeneous_matrix()
+                      ->cam_pose_Tcw.to_homogeneous_matrix()
                       .block(0, 0, 3, 4));
             }
             cout << "start quadric detection" << endl;
@@ -1023,14 +1024,8 @@ void incremental_build_graph_quadric(
 
     if (frame_index > 0) {
       graph.initializeOptimization();
-      if (frame_index == 3) {
-        cout << "all_landmark[0]->quadric_vertex->estimate()";
-        cout << all_landmark[0]->quadric_vertex->estimate().pose;
-        cout << all_landmark[0]->quadric_vertex->estimate().scale;
-      }
-
-      cout << "optimization failed" << graph.optimize(1) << endl;
-      if (frame_index == 3)
+      graph.optimize(1);
+      if (frame_index == 2)
         break;
     }
     cout << "update camera pose" << endl;

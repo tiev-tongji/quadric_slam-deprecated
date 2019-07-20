@@ -227,11 +227,15 @@ class Quadric {
 
   Matrix3d toConic(const SE3Quat& campose_wc, const Matrix3d& Kalib) const {
     std::cout << "toConic" << std::endl;
+    std::cout << "campose_wc"
+              << campose_wc.to_homogeneous_matrix().block(0, 0, 3, 4)
+              << std::endl;
     Eigen::Matrix<double, 3, 4> P =
         Kalib * campose_wc.to_homogeneous_matrix().block(
                     0, 0, 3, 4);  // Todo:BUG!! maybe campose_cw
     Matrix4d symMat = this->toSymMat();
-    Matrix3d conic = P * symMat * P.transpose();
+    std::cout << "P" << P << std::endl;
+    Matrix3d conic = (P * symMat * P.transpose()).adjoint();
     std::cout << "toConic end" << conic << std::endl;
     return conic;
   }
@@ -299,11 +303,7 @@ class VertexQuadric : public BaseVertex<9, Quadric>  // NOTE  this vertex stores
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
   VertexQuadric(){};
 
-  virtual void setToOriginImpl() {
-    std::cout << "setToOriginImpl()" << std::endl;
-    assert(1 == 2);
-    _estimate = Quadric();
-  }
+  virtual void setToOriginImpl() { _estimate = Quadric(); }
 
   virtual void oplusImpl(const double* update_) {
     Eigen::Map<const Vector9d> update(update_);
