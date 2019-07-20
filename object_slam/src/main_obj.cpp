@@ -20,7 +20,7 @@
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
 
-#include <pcl/PCLPointCloud2.h> Quadric_landmark* localQuadric = new Quadric_landmark();
+#include <pcl/PCLPointCloud2.h>
 
 #include <pcl/filters/approximate_voxel_grid.h>
 #include <pcl_ros/point_cloud.h>
@@ -329,22 +329,22 @@ void publish_all_poses(std::vector<tracking_frame*> all_frames,
       pub_slam_path.publish(path_preds);
       pub_truth_path.publish(path_truths);
     }
-    pub_final_opti_cube.publish(finalcube_markers);
+    //    pub_final_opti_cube.publish(finalcube_markers);
 
     if (frame_number < total_frame_number) {
-      // publish cuboid landmarks, after each frame's g2o optimization
-      if (cube_landmarks_history[frame_number] != nullptr)
-        pub_history_opti_cube.publish(cuboids_to_marker(
-            cube_landmarks_history[frame_number], Vector3d(1, 0, 0)));
+      //      // publish cuboid landmarks, after each frame's g2o optimization
+      //      if (cube_landmarks_history[frame_number] != nullptr)
+      //        pub_history_opti_cube.publish(cuboids_to_marker(
+      //            cube_landmarks_history[frame_number], Vector3d(1, 0, 0)));
 
-      // publish raw detected cube in each frame, before optimization
-      if (all_frame_rawcubes.size() > 0 &&
-          all_frame_rawcubes[frame_number] != nullptr)
-        pub_frame_raw_cube.publish(cuboids_to_marker(
-            all_frame_rawcubes[frame_number], Vector3d(0, 0, 1)));
+      //      // publish raw detected cube in each frame, before optimization
+      //      if (all_frame_rawcubes.size() > 0 &&
+      //          all_frame_rawcubes[frame_number] != nullptr)
+      //        pub_frame_raw_cube.publish(cuboids_to_marker(
+      //            all_frame_rawcubes[frame_number], Vector3d(0, 0, 1)));
 
       // publish camera pose estimation of this frame
-      pub_slam_odompose.publish(all_pred_pose_odoms[frame_number]);
+      //      pub_slam_odompose.publish(all_pred_pose_odoms[frame_number]);
       pub_truth_odompose.publish(all_truth_pose_odoms[frame_number]);
 
       // 	    std::cout<<"Frame position x/y:   "<<frame_number<<"
@@ -352,48 +352,51 @@ void publish_all_poses(std::vector<tracking_frame*> all_frames,
       // 			  all_pred_pose_odoms[frame_number].pose.pose.position.y
       // <<std::endl;
 
-      char frame_index_c[256];
-      sprintf(frame_index_c, "%04d", frame_number);  // format into 4 digit
+      //      char frame_index_c[256];
+      //      sprintf(frame_index_c, "%04d", frame_number);  // format into 4
+      //      digit
 
-      cv::Mat cuboid_2d_proj_img = all_frames[frame_number]->cuboids_2d_img;
+      //      cv::Mat cuboid_2d_proj_img =
+      //      all_frames[frame_number]->cuboids_2d_img;
 
-      std::string raw_rgb_img_name = base_folder + "raw_imgs/" +
-                                     std::string(frame_index_c) +
-                                     "_rgb_raw.jpg";
-      cv::Mat raw_rgb_img = cv::imread(raw_rgb_img_name, 1);
+      //      std::string raw_rgb_img_name = base_folder + "raw_imgs/" +
+      //                                     std::string(frame_index_c) +
+      //                                     "_rgb_raw.jpg";
+      //      cv::Mat raw_rgb_img = cv::imread(raw_rgb_img_name, 1);
 
-      if (show_truth_cloud && (truth_frame_poses.rows() > 0))
-        if (frame_number % 2 == 0)  // show point cloud every N frames
-        {
-          std::string raw_depth_img_name = base_folder + "depth_imgs/" +
-                                           std::string(frame_index_c) +
-                                           "_depth_raw.png";
-          cv::Mat raw_depth_img =
-              cv::imread(raw_depth_img_name, CV_LOAD_IMAGE_ANYDEPTH);
-          raw_depth_img.convertTo(raw_depth_img, CV_32FC1,
-                                  1.0 / depth_map_scaling, 0);
+      //      if (show_truth_cloud && (truth_frame_poses.rows() > 0))
+      //        if (frame_number % 2 == 0)  // show point cloud every N frames
+      //        {
+      //          std::string raw_depth_img_name = base_folder + "depth_imgs/" +
+      //                                           std::string(frame_index_c) +
+      //                                           "_depth_raw.png";
+      //          cv::Mat raw_depth_img =
+      //              cv::imread(raw_depth_img_name, CV_LOAD_IMAGE_ANYDEPTH);
+      //          raw_depth_img.convertTo(raw_depth_img, CV_32FC1,
+      //                                  1.0 / depth_map_scaling, 0);
 
-          CloudXYZRGB::Ptr point_cloud(new CloudXYZRGB());
-          Eigen::Matrix4f truth_pose_matrix =
-              g2o::SE3Quat(truth_frame_poses.row(frame_number).segment<7>(1))
-                  .to_homogeneous_matrix()
-                  .cast<float>();
+      //          CloudXYZRGB::Ptr point_cloud(new CloudXYZRGB());
+      //          Eigen::Matrix4f truth_pose_matrix =
+      //              g2o::SE3Quat(truth_frame_poses.row(frame_number).segment<7>(1))
+      //                  .to_homogeneous_matrix()
+      //                  .cast<float>();
 
-          depth_to_cloud(raw_rgb_img, raw_depth_img, truth_pose_matrix,
-                         point_cloud,
-                         true);  // need to downsample cloud, otherwise too many
-          ros::Time curr_time = ros::Time::now();
+      //          depth_to_cloud(raw_rgb_img, raw_depth_img, truth_pose_matrix,
+      //                         point_cloud,
+      //                         true);  // need to downsample cloud, otherwise
+      //                         too many
+      //          ros::Time curr_time = ros::Time::now();
 
-          point_cloud->header.frame_id = "/world";
-          point_cloud->header.stamp = (curr_time.toNSec() / 1000ull);
-          raw_cloud_pub.publish(point_cloud);
-        }
+      //          point_cloud->header.frame_id = "/world";
+      //          point_cloud->header.stamp = (curr_time.toNSec() / 1000ull);
+      //          raw_cloud_pub.publish(point_cloud);
+      //        }
 
-      cv_bridge::CvImage out_image;
-      out_image.header.stamp = ros::Time::now();
-      out_image.image = cuboid_2d_proj_img;
-      out_image.encoding = sensor_msgs::image_encodings::TYPE_8UC3;
-      pub_2d_cuboid_project.publish(out_image.toImageMsg());
+      //      cv_bridge::CvImage out_image;
+      //      out_image.header.stamp = ros::Time::now();
+      //      out_image.image = cuboid_2d_proj_img;
+      //      out_image.encoding = sensor_msgs::image_encodings::TYPE_8UC3;
+      //      pub_2d_cuboid_project.publish(out_image.toImageMsg());
     }
 
     if (frame_number == int(all_pred_pose_odoms.size())) {
@@ -405,6 +408,57 @@ void publish_all_poses(std::vector<tracking_frame*> all_frames,
   }
 }
 
+void publish_all_poses_quadric(std::vector<tracking_frame_quadric*> all_frames,
+                               Eigen::MatrixXd& truth_frame_poses) {
+  ros::NodeHandle n;
+  ros::Publisher pub_slam_odompose =
+      n.advertise<nav_msgs::Odometry>("/slam_odom_pose", 10);
+  ros::Publisher pub_truth_odompose =
+      n.advertise<nav_msgs::Odometry>("/truth_odom_pose", 10);
+
+  std_msgs::Header pose_header;
+  pose_header.frame_id = "/world";
+  pose_header.stamp = ros::Time::now();
+  std::vector<nav_msgs::Odometry> all_pred_pose_odoms;
+  std::vector<nav_msgs::Odometry> all_truth_pose_odoms;
+
+  for (int i = 0; i < all_frames.size(); i++) {
+    geometry_msgs::Pose pose_msg;
+    pose_msg.position.x = truth_frame_poses(i, 1);
+    pose_msg.position.y = truth_frame_poses(i, 2);
+    pose_msg.position.z = truth_frame_poses(i, 3);
+    pose_msg.orientation.x = truth_frame_poses(i, 4);
+    pose_msg.orientation.y = truth_frame_poses(i, 5);
+    pose_msg.orientation.z = truth_frame_poses(i, 6);
+    pose_msg.orientation.w = truth_frame_poses(i, 7);
+    nav_msgs::Odometry odom_msg;
+    odom_msg.pose.pose = pose_msg;
+    odom_msg.header = pose_header;
+    all_truth_pose_odoms.push_back(odom_msg);
+  }
+
+  for (int i = 0; i < all_frames.size(); i++) {
+    all_pred_pose_odoms.push_back(
+        posenode_to_odommsgs(all_frames[i]->cam_pose_Twc, pose_header));
+  }
+
+  ros::Rate loop_rate(5);  // 5
+  int frame_number = -1;
+  while (n.ok()) {
+    frame_number++;
+    if (frame_number == int(all_pred_pose_odoms.size())) {
+      cout << "Finish all visulialization!" << endl;
+    }
+    // publish camera pose estimation of this frame
+    if (frame_number < int(all_pred_pose_odoms.size())) {
+      cout << "visulialization!" << endl;
+      pub_slam_odompose.publish(all_pred_pose_odoms[frame_number]);
+      pub_truth_odompose.publish(all_truth_pose_odoms[frame_number]);
+    }
+    ros::spinOnce();
+    loop_rate.sleep();
+  }
+}
 // NOTE offline_pred_objects and init_frame_poses are not used in
 // online_detect_mode! truth cam pose of first frame is used.
 void incremental_build_graph(Eigen::MatrixXd& offline_pred_frame_objects,
@@ -615,9 +669,10 @@ void incremental_build_graph(Eigen::MatrixXd& offline_pred_frame_objects,
           cube_local_meas.transform_from(curr_cam_pose_Twc);
       vCube = new g2o::VertexCuboid();
       vCube->setEstimate(init_cuboid_global_pose);
-      vCube->setId(0);
-      vCube->setFixed(false);
+
+      //      vCube->setFixed(false);
       graph.addVertex(vCube);
+      vCube->setId(0);
     }
 
     // set up g2o camera vertex
@@ -738,23 +793,29 @@ void incremental_build_graph_quadric(
 
   // process each frame online and incrementally
   for (int frame_index = 0; frame_index < total_frame_number; frame_index++) {
+    cout << "loop begin" << endl;
     g2o::SE3Quat curr_cam_pose_Twc;
     g2o::SE3Quat odom_val;  // from previous frame to current frame
 
     if (frame_index == 0)
       curr_cam_pose_Twc = fixed_init_cam_pose_Twc;
     else {
-      g2o::SE3Quat prev_pose_Tcw = all_frames[frame_index - 1]->cam_pose_Tcw;
-      if (frame_index > 1)  // from third frame, use constant motion model to
-                            // initialize camera.
-      {
-        g2o::SE3Quat prev_prev_pose_Tcw =
-            all_frames[frame_index - 2]->cam_pose_Tcw;
-        odom_val = prev_pose_Tcw * prev_prev_pose_Tcw.inverse();
-      }
-      curr_cam_pose_Twc =
-          (odom_val * prev_pose_Tcw)
-              .inverse();  // predict cam position using last transition
+      g2o::SE3Quat temp_cam_pose_Twc(truth_frame_poses.row(frame_index)
+                                         .tail<7>());  // use true pose to debug
+
+      //      curr_cam_pose_Twc = temp_cam_pose_Twc;
+      //      g2o::SE3Quat prev_pose_Tcw = all_frames[frame_index -
+      //      1]->cam_pose_Tcw; if (frame_index > 1)  // from third frame, use
+      //      constant motion model to
+      //                            // initialize camera.
+      //      {
+      //        g2o::SE3Quat prev_prev_pose_Tcw =
+      //            all_frames[frame_index - 2]->cam_pose_Tcw;
+      //        odom_val = prev_pose_Tcw * prev_prev_pose_Tcw.inverse();
+      //      }
+      //      curr_cam_pose_Twc =
+      //          (odom_val * prev_pose_Tcw)
+      //              .inverse();  // predict cam position using last transition
     }
 
     tracking_frame_quadric* currframe = new tracking_frame_quadric();
@@ -766,21 +827,14 @@ void incremental_build_graph_quadric(
     char frame_index_c[256];
     sprintf(frame_index_c, "%04d", frame_index);  // format into 4 digit
 
+    cout << "start detection" << endl;
+
     if (online_detect_mode) {
       cv::Mat raw_rgb_img = cv::imread(
           base_folder + "raw_imgs/" + frame_index_c + "_rgb_raw.jpg", 1);
-
-      // edge detection
-      //      cv::Mat all_lines_mat;
-      //      line_lbd_obj.detect_filter_lines(raw_rgb_img, all_lines_mat);
-      //      Eigen::MatrixXd all_lines_raw(all_lines_mat.rows, 4);
-      //      for (int rr = 0; rr < all_lines_mat.rows; rr++)
-      //        for (int cc = 0; cc < 4; cc++)
-      //          all_lines_raw(rr, cc) = all_lines_mat.at<float>(rr, cc);
-
       // read cleaned yolo 2d object detection, !!! assume only one bbox
       Eigen::MatrixXd raw_2d_objs(1,
-                                  5);  // 2d rect [x1 y1 width height], and prob
+                                  5);  // 2d rect [x1 y1 width height],and prob
       if (!read_all_number_txt(base_folder + "/filter_2d_obj_txts/" +
                                    frame_index_c + "_yolo2_0.15.txt",
                                raw_2d_objs))
@@ -798,6 +852,7 @@ void incremental_build_graph_quadric(
              landmark != all_landmark.end(); ++landmark) {
           if (1 /*association success*/) {
             tempDR->class_id = (*landmark)->class_id;
+            //            (*landmark)->quadric_tracking.push_back(tempDR);
             break;
           }
         }
@@ -806,12 +861,12 @@ void incremental_build_graph_quadric(
           Quadric_landmark* newLandmark = new Quadric_landmark();
           newLandmark->class_id = totall_class;
           totall_class++;
-          newLandmark->quadric_tracking.push_back(tempDR);
+          //          newLandmark->quadric_tracking.push_back(tempDR);
           all_landmark.push_back(newLandmark);
         }
       }
 
-      // detect_cuboid_obj.detect_cuboid(raw_rgb_img, transToWolrd, raw_2d_objs,
+      // detect_cuboid_obj.detect_cuboid(raw_rgb_img, transToWolrd,raw_2d_objs,
       //                                 all_lines_raw, frames_cuboids);
       // currframe->cuboids_2d_img = detect_cuboid_obj.cuboids_2d_img;
     } else {
@@ -819,14 +874,15 @@ void incremental_build_graph_quadric(
       // int cube_obs_frame_id =
       //     offline_pred_frame_objects(offline_cube_obs_row_id, 0);
       // has_detected_cuboid = cube_obs_frame_id == frame_index;
-      // if (has_detected_cuboid)  // prepare object measurement   not all frame
+      // if (has_detected_cuboid)
+      // prepare object measurement   not all frame
       //                           // has observation!!
       // {
       //   VectorXd measure_data =
       //       offline_pred_frame_objects.row(offline_cube_obs_row_id);
       //   g2o::cuboid cube_ground_value;
       //   Vector9d cube_pose;
-      //   cube_pose << measure_data(1), measure_data(2), measure_data(3), 0, 0,
+      //   cube_pose << measure_data(1), measure_data(2), measure_data(3),0, 0,
       //       measure_data(4), measure_data(5), measure_data(6),
       //       measure_data(7);  // xyz roll pitch yaw scale
       //   cube_ground_value.fromMinimalVector(cube_pose);
@@ -843,13 +899,14 @@ void incremental_build_graph_quadric(
       //       std::string(frame_index_c)
       //       +
       //       "_best_objects.jpg";
-      //   currframe->cuboids_2d_img = cv::imread(detected_cube_2d_img_name, 1);
+      //   currframe->cuboids_2d_img =cv::imread(detected_cube_2d_img_name, 1);
 
       //   offline_cube_obs_row_id++;  // switch to next row  NOTE at most one
       //                               // object one frame in this data
       // }
     }
 
+    cout << "set up g2o camera vertex" << endl;
     // set up g2o camera vertex
     g2o::VertexSE3Expmap* vSE3 = new g2o::VertexSE3Expmap();
     currframe->pose_vertex = vSE3;
@@ -859,6 +916,7 @@ void incremental_build_graph_quadric(
         curr_cam_pose_Twc);  // g2o vertex usually stores world to camera pose.
     vSE3->setFixed(frame_index == 0);
 
+    cout << "add cam-cam odometry edges" << endl;
     // camera vertex, add cam-cam odometry edges
     if (frame_index > 0) {
       g2o::EdgeSE3Expmap* e = new g2o::EdgeSE3Expmap();
@@ -877,16 +935,16 @@ void incremental_build_graph_quadric(
       Matrix6d info = inv_sigma.cwiseProduct(inv_sigma).asDiagonal();
       e->setInformation(info);
       graph.addEdge(e);
+      // do optimization!
+      graph.initializeOptimization();
+      graph.optimize(5);
     }
-    graph.initializeOptimization();
-    graph.optimize(5);  // do optimization!
-
     // update camera pose
     for (int j = 0; j <= frame_index; j++) {
       all_frames[j]->cam_pose_Tcw = all_frames[j]->pose_vertex->estimate();
       all_frames[j]->cam_pose_Twc = all_frames[j]->cam_pose_Tcw.inverse();
     }
-
+    cout << "update landmark" << endl;
     // update landmark
     for (auto bbox = currframe->detect_result.begin();
          bbox != currframe->detect_result.end(); ++bbox)
@@ -894,10 +952,12 @@ void incremental_build_graph_quadric(
            ++landmark)
         if ((*landmark)->class_id == (*bbox)->class_id) {
           (*landmark)->quadric_tracking.push_back(*bbox);
+
           if ((*landmark)->quadric_tracking.size() > 3) {
             vector<Eigen::Matrix<double, 3, 4>,
                    Eigen::aligned_allocator<Eigen::Matrix<double, 3, 4>>>
                 projection_matrix;
+
             for (auto matrix = (*landmark)->quadric_tracking.begin();
                  matrix != (*landmark)->quadric_tracking.end(); ++matrix) {
               projection_matrix.push_back(
@@ -905,19 +965,26 @@ void incremental_build_graph_quadric(
                       ->cam_pose_Twc.to_homogeneous_matrix()
                       .block(0, 0, 3, 4));
             }
+            cout << "start quadric detection" << endl;
             (*landmark)->quadric_detection(projection_matrix);
+            cout << "end quadric detection" << endl;
             if ((*landmark)->isDetected == NEW_QUADRIC) {  // new v
+              cout << "new quadric vertex" << endl;
+              cout << (*landmark)->quadric_vertex->estimate().pose << " "
+                   << (*landmark)->quadric_vertex->estimate().scale << endl;
+
               graph.addVertex((*landmark)->quadric_vertex);
-              (*landmark)->quadric_vertex->setId(vertexID++);  // Todo
+              (*landmark)->quadric_vertex->setId(vertexID++);
 
               for (auto deteResult = (*landmark)->quadric_tracking.begin();
                    deteResult != (*landmark)->quadric_tracking.end();
                    ++deteResult) {
                 g2o::EdgeSE3QuadricProj* e = new g2o::EdgeSE3QuadricProj();
-                e->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex*>(
+                e->Kalib = calib;
+                e->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex*>(
                                     (*landmark)->quadric_vertex));
                 e->setVertex(
-                    1,
+                    0,
                     dynamic_cast<g2o::OptimizableGraph::Vertex*>(
                         all_frames[(*deteResult)->frame_seq_id]->pose_vertex));
                 e->setMeasurement((*deteResult)->bbox);
@@ -931,13 +998,15 @@ void incremental_build_graph_quadric(
                 graph.addEdge(e);
               }
             } else if ((*landmark)->isDetected == UPDATE_QUADRIC) {
+              cout << "update quadric vertex" << endl;
               g2o::EdgeSE3QuadricProj* e = new g2o::EdgeSE3QuadricProj();
+              e->Kalib = calib;
               e->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex*>(
-                                  (*landmark)->quadric_vertex));
-              e->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex*>(
                                   currframe->pose_vertex));
+              e->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex*>(
+                                  (*landmark)->quadric_vertex));
               e->setMeasurement((*bbox)->bbox);
-              e->setId(edgeID++);  //????
+              e->setId(edgeID++);
               Vector4d inv_sigma;
               inv_sigma << 1, 1, 1, 1;
               inv_sigma =
@@ -949,24 +1018,39 @@ void incremental_build_graph_quadric(
           }
         }
 
-    graph.initializeOptimization();
-    graph.optimize(5);  // do optimization!
+    cout << "do optimization" << endl;
+    // do optimization!
 
+    if (frame_index > 0) {
+      graph.initializeOptimization();
+      if (frame_index == 3) {
+        cout << "all_landmark[0]->quadric_vertex->estimate()";
+        cout << all_landmark[0]->quadric_vertex->estimate().pose;
+        cout << all_landmark[0]->quadric_vertex->estimate().scale;
+      }
+
+      cout << "optimization failed" << graph.optimize(1) << endl;
+      if (frame_index == 3)
+        break;
+    }
+    cout << "update camera pose" << endl;
     // update camera pose and quadric
     for (int j = 0; j <= frame_index; j++) {
       all_frames[j]->cam_pose_Tcw = all_frames[j]->pose_vertex->estimate();
       all_frames[j]->cam_pose_Twc = all_frames[j]->cam_pose_Tcw.inverse();
     }
+    cout << "update quadric" << endl;
     for (auto landmark = all_landmark.begin(); landmark != all_landmark.end();
          ++landmark) {
-      (*landmark)->Quadric_meas = (*landmark)->quadric_vertex->estimate();
+      if ((*landmark)->isDetected != NO_QUADRIC)
+        (*landmark)->Quadric_meas = (*landmark)->quadric_vertex->estimate();
     }
-    // Todo:visualization
-    //  cout << "Finish all optimization! Begin visualization." << endl;
 
-    //  publish_all_poses(all_frames, cube_pose_opti_history,
-    //                    cube_pose_raw_detected_history, truth_frame_poses);
+    cout << "finished frame " << frame_index << endl;
   }
+
+  cout << "Finish all optimization! Begin visualization." << endl;
+  publish_all_poses_quadric(all_frames, truth_frame_poses);
 }
 int main(int argc, char* argv[]) {
   ros::init(argc, argv, "object_slam");

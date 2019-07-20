@@ -36,10 +36,12 @@ class Quadric_landmark {
           projection_matrix) {  //        // Todo:detect or update quadric
                                 // 0 no quadric, 1 new quadric, 2 update quadric
     if (isDetected == NEW_QUADRIC || isDetected == UPDATE_QUADRIC) {
+      cout << "quadric has been detected" << endl;
       isDetected = UPDATE_QUADRIC;
       return;
     }
     if (quadric_tracking.size() < 3) {
+      cout << "need more frame" << endl;
       isDetected = NO_QUADRIC;
       return;
     }
@@ -77,13 +79,22 @@ class Quadric_landmark {
 
     Vector9d minimalVector;
     minimalVector << translation, rotation, shape;
-    Quadric_meas.fromMinimalVector(minimalVector);
-    quadric_vertex->setEstimate(Quadric_meas);
+    cout << "minimalVector" << minimalVector << endl;
 
     if (meas_quality > QUALITY_THRESHOLD) {
       isDetected = NEW_QUADRIC;
+      Quadric_meas = g2o::Quadric();
+      Quadric_meas.fromMinimalVector(minimalVector);
+      cout << "minimalVector" << minimalVector << endl;
+      cout << "Quadric_meas.pose " << Quadric_meas.pose << endl;
+      cout << "Quadric_meas.scale " << Quadric_meas.scale << endl;
+      quadric_vertex = new g2o::VertexQuadric();
+      quadric_vertex->setEstimate(Quadric_meas);
+
+      cout << "detection  result: NEW_QUADRIC" << minimalVector << endl;
       return;
     } else {
+      cout << "detection  result: NO_QUADRIC" << minimalVector << endl;
       isDetected = NO_QUADRIC;
       return;
     }

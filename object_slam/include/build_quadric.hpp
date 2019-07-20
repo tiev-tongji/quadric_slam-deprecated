@@ -273,8 +273,13 @@ void ComputeDualQuadric(
   Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> eigen_solver(quadric_33);
 
   Eigen::Matrix3d eigen_vectors = eigen_solver.eigenvectors();
-  cout << "The Rotation of the Constrained Quadric is " << endl
+  cout << "The Rotation Matrix of the Constrained Quadric is " << endl
        << eigen_vectors << endl
+       << endl;
+
+  rotation = eigen_vectors.eulerAngles(2, 1, 0);
+  cout << "The Rotation vector of the Constrained Quadric is " << endl
+       << rotation << endl
        << endl;
 
   Eigen::Vector3d eigen_values;

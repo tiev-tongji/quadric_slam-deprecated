@@ -204,7 +204,7 @@ class Quadric {
     return v;
   }
 
-  Matrix4d toSymMat() const {
+  Matrix4d \\\\\\\\\\\\\\\\\\\toSymMat() const {
     Matrix4d res;
     Matrix4d centreAtOrigin;
     std::cout << "scale " << scale << std::endl;
