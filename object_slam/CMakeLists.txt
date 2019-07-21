@@ -74,7 +74,7 @@ SET(CMAKE_BUILD_TYPE Release)
 
 ## Declare a C++ executable
 add_executable(object_slam_node src/main_obj.cpp)
-
+add_executable(quadric_test_node src/test.cpp)
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 # add_dependencies(object_slam_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
@@ -84,7 +84,10 @@ target_link_libraries(object_slam_node
   ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} ${PCL_LIBRARIES}
   ${PROJECT_SOURCE_DIR}/Thirdparty/g2o/lib/libg2o.so
 )
-
+target_link_libraries(quadric_test_node
+  ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} ${PCL_LIBRARIES}
+  ${PROJECT_SOURCE_DIR}/Thirdparty/g2o/lib/libg2o.so
+)
 #############
 ## Testing ##
 #############

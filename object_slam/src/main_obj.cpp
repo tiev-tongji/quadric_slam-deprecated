@@ -48,6 +48,7 @@ using namespace std;
 using namespace Eigen;
 
 typedef pcl::PointCloud<pcl::PointXYZRGB> CloudXYZRGB;
+#define MAX_DETECTION 10
 
 // global variable
 std::string base_folder;
@@ -833,7 +834,7 @@ void incremental_build_graph_quadric(
       cv::Mat raw_rgb_img = cv::imread(
           base_folder + "raw_imgs/" + frame_index_c + "_rgb_raw.jpg", 1);
       // read cleaned yolo 2d object detection, !!! assume only one bbox
-      Eigen::MatrixXd raw_2d_objs(1,
+      Eigen::MatrixXd raw_2d_objs(MAX_DETECTION,
                                   5);  // 2d rect [x1 y1 width height],and prob
       if (!read_all_number_txt(base_folder + "/filter_2d_obj_txts/" +
                                    frame_index_c + "_yolo2_0.15.txt",
@@ -842,7 +843,7 @@ void incremental_build_graph_quadric(
       raw_2d_objs.leftCols<2>().array() -=
           1;  // change matlab coordinate to c++, minus 1
 
-      for (int i = 0; i < 1; i++) {
+      for (int i = 0; i < raw_2d_objs.rows(); i++) {
         Detection_result* tempDR =
             new Detection_result(raw_2d_objs.block(i, 0, 1, 5), frame_index);
         currframe->detect_result.push_back(tempDR);
@@ -947,6 +948,8 @@ void incremental_build_graph_quadric(
     }
     cout << "update landmark" << endl;
     // update landmark
+    bool landmarkUpdate = false;  // if find now consrtain
+
     for (auto bbox = currframe->detect_result.begin();
          bbox != currframe->detect_result.end(); ++bbox)
       for (auto landmark = all_landmark.begin(); landmark != all_landmark.end();
@@ -954,7 +957,7 @@ void incremental_build_graph_quadric(
         if ((*landmark)->class_id == (*bbox)->class_id) {
           (*landmark)->quadric_tracking.push_back(*bbox);
 
-          if ((*landmark)->quadric_tracking.size() > 2) {
+          if ((*landmark)->quadric_tracking.size() > 33) {
             vector<Eigen::Matrix<double, 3, 4>,
                    Eigen::aligned_allocator<Eigen::Matrix<double, 3, 4>>>
                 projection_matrix;
@@ -981,13 +984,13 @@ void incremental_build_graph_quadric(
                    deteResult != (*landmark)->quadric_tracking.end();
                    ++deteResult) {
                 g2o::EdgeSE3QuadricProj* e = new g2o::EdgeSE3QuadricProj();
-                e->Kalib = calib;
-                e->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex*>(
-                                    (*landmark)->quadric_vertex));
+                e->calib = calib;
                 e->setVertex(
                     0,
                     dynamic_cast<g2o::OptimizableGraph::Vertex*>(
                         all_frames[(*deteResult)->frame_seq_id]->pose_vertex));
+                e->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex*>(
+                                    (*landmark)->quadric_vertex));
                 e->setMeasurement((*deteResult)->bbox);
                 e->setId(edgeID++);
                 Vector4d inv_sigma;
@@ -999,9 +1002,10 @@ void incremental_build_graph_quadric(
                 graph.addEdge(e);
               }
             } else if ((*landmark)->isDetected == UPDATE_QUADRIC) {
+              landmarkUpdate = true;
               cout << "update quadric vertex" << endl;
               g2o::EdgeSE3QuadricProj* e = new g2o::EdgeSE3QuadricProj();
-              e->Kalib = calib;
+              e->calib = calib;
               e->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex*>(
                                   currframe->pose_vertex));
               e->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex*>(
@@ -1022,11 +1026,11 @@ void incremental_build_graph_quadric(
     cout << "do optimization" << endl;
     // do optimization!
 
-    if (frame_index > 0) {
+    if (landmarkUpdate) {
       graph.initializeOptimization();
       graph.optimize(1);
-      if (frame_index == 2)
-        break;
+      //      if (frame_index > 34)
+      //        break;
     }
     cout << "update camera pose" << endl;
     // update camera pose and quadric

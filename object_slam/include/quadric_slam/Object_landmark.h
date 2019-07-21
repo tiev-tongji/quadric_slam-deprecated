@@ -40,7 +40,7 @@ class Quadric_landmark {
       isDetected = UPDATE_QUADRIC;
       return;
     }
-    if (quadric_tracking.size() < 3) {
+    if (quadric_tracking.size() < 34) {
       cout << "need more frame" << endl;
       isDetected = NO_QUADRIC;
       return;
