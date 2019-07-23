@@ -804,16 +804,15 @@ void incremental_build_graph_quadric(
       g2o::SE3Quat temp_cam_pose_Twc(truth_frame_poses.row(frame_index)
                                          .tail<7>());  // use true pose to debug
 
-      //      curr_cam_pose_Twc = temp_cam_pose_Twc;
-      //      g2o::SE3Quat prev_pose_Tcw = all_frames[frame_index -
-      //      1]->cam_pose_Tcw; if (frame_index > 1)  // from third frame, use
-      //      constant motion model to
-      //                            // initialize camera.
-      //      {
-      //        g2o::SE3Quat prev_prev_pose_Tcw =
-      //            all_frames[frame_index - 2]->cam_pose_Tcw;
-      //        odom_val = prev_pose_Tcw * prev_prev_pose_Tcw.inverse();
-      //      }
+      g2o::SE3Quat prev_pose_Tcw = all_frames[frame_index - 1]->cam_pose_Tcw;
+      if (frame_index > 1)  // from third frame, useconstant motion model to
+                            // initialize camera.
+      {
+        g2o::SE3Quat prev_prev_pose_Tcw =
+            all_frames[frame_index - 2]->cam_pose_Tcw;
+        odom_val = temp_cam_pose_Twc.inverse() * prev_pose_Tcw.inverse();
+      }
+      curr_cam_pose_Twc = temp_cam_pose_Twc;
       //      curr_cam_pose_Twc =
       //          (odom_val * prev_pose_Tcw)
       //              .inverse();  // predict cam position using last transition
@@ -974,8 +973,12 @@ void incremental_build_graph_quadric(
             cout << "end quadric detection" << endl;
             if ((*landmark)->isDetected == NEW_QUADRIC) {  // new v
               cout << "new quadric vertex" << endl;
-              cout << (*landmark)->quadric_vertex->estimate().pose << " "
-                   << (*landmark)->quadric_vertex->estimate().scale << endl;
+              //              cout <<
+              //              (*landmark)->quadric_vertex->estimate().pose << "
+              //              "
+              //                   <<
+              //                   (*landmark)->quadric_vertex->estimate().scale
+              //                   << endl;
 
               graph.addVertex((*landmark)->quadric_vertex);
               (*landmark)->quadric_vertex->setId(vertexID++);

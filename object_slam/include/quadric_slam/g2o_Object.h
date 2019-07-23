@@ -142,41 +142,40 @@ class Quadric {
   Matrix4d toSymMat() const {
     Matrix4d res;
     Matrix4d centreAtOrigin;
-    std::cout << "scale " << scale << std::endl;
-    std::cout << "pose" << pose << std::endl;
+    //    std::cout << "scale " << scale << std::endl;
+    //    std::cout << "pose" << pose << std::endl;
     centreAtOrigin = Eigen::Matrix4d::Identity();
     centreAtOrigin(0, 0) = pow(scale(0), 2);
     centreAtOrigin(1, 1) = pow(scale(1), 2);
     centreAtOrigin(2, 2) = pow(scale(2), 2);
     centreAtOrigin(3, 3) = -1;
-    std::cout << "centreAtOrigin" << centreAtOrigin << std::endl;
+    //    std::cout << "centreAtOrigin" << centreAtOrigin << std::endl;
     Matrix4d Z;
     Z = pose.to_homogeneous_matrix();
-    std::cout << "Z " << Z << std::endl;
+    //    std::cout << "Z " << Z << std::endl;
     res = Z * centreAtOrigin * Z.transpose();
-    std::cout << "toSymMat" << res << std::endl;
+    //    std::cout << "toSymMat" << res << std::endl;
     return res;
   }
 
   // get rectangles after projection  [topleft, bottomright]
 
   Matrix3d toConic(const SE3Quat& campose_wc, const Matrix3d& calib) const {
-    std::cout << "toConic" << std::endl;
-    std::cout << "campose_wc"
-              << campose_wc.to_homogeneous_matrix().block(0, 0, 3, 4)
-              << std::endl;
+    //    std::cout << "toConic" << std::endl;
+    //    std::cout << "campose_wc"
+    //    << campose_wc.to_homogeneous_matrix().block(0, 0, 3, 4) << std::endl;
     Eigen::Matrix<double, 3, 4> P =
         calib * campose_wc.to_homogeneous_matrix().block(
                     0, 0, 3, 4);  // Todo:BUG!! maybe campose_cw
     Matrix4d symMat = this->toSymMat();
-    std::cout << "P" << P << std::endl;
+    //    std::cout << "P" << P << std::endl;
     Matrix3d conic = (P * symMat * P.transpose());
     return conic.inverse();
   }
 
   Vector4d projectOntoImageRect(const SE3Quat& campose_wc,
                                 const Matrix3d& Kalib) const {
-    std::cout << "projectOntoImageRect" << std::endl;
+    //    std::cout << "projectOntoImageRect" << std::endl;
     Matrix3d conic = this->toConic(campose_wc, Kalib);
     Vector6d c;
     c << conic(0, 0), conic(0, 1) * 2, conic(1, 1), conic(0, 2) * 2,
@@ -212,10 +211,10 @@ class Quadric {
     topleft(0) = x.minCoeff();
     topleft(1) = y.minCoeff();
     // Todo:conic at boundary
-    std::cout << "projectOntoImageRect end"
-              << Vector4d(topleft(0), topleft(1), bottomright(0),
-                          bottomright(1))
-              << std::endl;
+    //    std::cout << "projectOntoImageRect end"
+    //              << Vector4d(topleft(0), topleft(1), bottomright(0),
+    //                          bottomright(1))
+    //              << std::endl;
     return Vector4d(topleft(0), topleft(1), bottomright(0), bottomright(1));
   }
 
@@ -255,16 +254,16 @@ class Quadric {
   // get rectangles after projection  [center, width, height]
   Vector4d projectOntoImageBbox(const SE3Quat& campose_wc,
                                 const Matrix3d& Kalib) const {
-    std::cout << "projectOntoImageBbox" << std::endl;
+    //    std::cout << "projectOntoImageBbox" << std::endl;
     Vector4d rect_project = projectOntoImageRect(
         campose_wc, Kalib);  // top_left, bottom_right  x1 y1 x2 y2
     Vector2d rect_center =
         (rect_project.tail<2>() + rect_project.head<2>()) / 2;
     Vector2d widthheight = rect_project.tail<2>() - rect_project.head<2>();
-    std::cout << "projectOntoImageBbox end" << std::endl;
-    std::cout << Vector4d(rect_center(0), rect_center(1), widthheight(0),
-                          widthheight(1))
-              << std::endl;
+    //    std::cout << "projectOntoImageBbox end" << std::endl;
+    //    std::cout << Vector4d(rect_center(0), rect_center(1), widthheight(0),
+    //                          widthheight(1))
+    //              << std::endl;
     return Vector4d(rect_center(0), rect_center(1), widthheight(0),
                     widthheight(1));
   }
@@ -317,7 +316,7 @@ class EdgeSE3QuadricProj
   virtual bool write(std::ostream& os) const { return os.good(); };
 
   void computeError() {
-    std::cout << "EdgeSE3QuadricProj computeError" << std::endl;
+    //    std::cout << "EdgeSE3QuadricProj computeError" << std::endl;
     const VertexSE3Expmap* SE3Vertex = static_cast<const VertexSE3Expmap*>(
         _vertices[0]);  //  world to camera pose
     const VertexQuadric* quadricVertex = static_cast<const VertexQuadric*>(

@@ -79,22 +79,22 @@ class Quadric_landmark {
 
     Vector9d minimalVector;
     minimalVector << translation, rotation, shape;
-    cout << "minimalVector" << minimalVector << endl;
+    //    cout << "minimalVector" << minimalVector << endl;
 
     if (meas_quality > QUALITY_THRESHOLD) {
       isDetected = NEW_QUADRIC;
       Quadric_meas = g2o::Quadric();
       Quadric_meas.fromMinimalVector(minimalVector);
-      cout << "minimalVector" << minimalVector << endl;
-      cout << "Quadric_meas.pose " << Quadric_meas.pose << endl;
-      cout << "Quadric_meas.scale " << Quadric_meas.scale << endl;
+      //      cout << "minimalVector" << minimalVector << endl;
+      //      cout << "Quadric_meas.pose " << Quadric_meas.pose << endl;
+      //      cout << "Quadric_meas.scale " << Quadric_meas.scale << endl;
       quadric_vertex = new g2o::VertexQuadric();
       quadric_vertex->setEstimate(Quadric_meas);
 
-      cout << "detection  result: NEW_QUADRIC" << minimalVector << endl;
+      //      cout << "detection  result: NEW_QUADRIC" << minimalVector << endl;
       return;
     } else {
-      cout << "detection  result: NO_QUADRIC" << minimalVector << endl;
+      //      cout << "detection  result: NO_QUADRIC" << minimalVector << endl;
       isDetected = NO_QUADRIC;
       return;
     }
