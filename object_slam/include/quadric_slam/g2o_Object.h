@@ -31,6 +31,10 @@ class Quadric {
     scale.setZero();
   }
 
+  Quadric(const Matrix3d& R, const Vector3d& t, const Vector3d& inputScale) {
+    pose = SE3Quat(R, t);
+    scale = inputScale;
+  }
   // v = (t1,t2,t3,theta1,theta2,theta3,s1,s2,s3)
   // xyz roll pitch yaw half_scale
   inline void fromMinimalVector(const Vector9d& v) {

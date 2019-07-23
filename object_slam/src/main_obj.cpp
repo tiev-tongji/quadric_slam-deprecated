@@ -417,11 +417,29 @@ void publish_all_poses_quadric(std::vector<tracking_frame_quadric*> all_frames,
   ros::Publisher pub_truth_odompose =
       n.advertise<nav_msgs::Odometry>("/truth_odom_pose", 10);
 
+  ros::Publisher pub_landmark =
+      n.advertise<visualization_msgs::Marker>("visualization_marker", 10);
+
   std_msgs::Header pose_header;
   pose_header.frame_id = "/world";
   pose_header.stamp = ros::Time::now();
   std::vector<nav_msgs::Odometry> all_pred_pose_odoms;
   std::vector<nav_msgs::Odometry> all_truth_pose_odoms;
+
+  int landmarkNum = all_frames.back()->observed_quadrics.size();
+  std::vector<visualization_msgs::Marker> markers;
+  for (int i = 0; i < landmarkNum; ++i) {
+    visualization_msgs::Marker marker;
+    marker.header.frame_id = "/world";
+    marker.header.stamp = ros::Time();
+    marker.id = i;
+    marker.type = visualization_msgs::Marker::SPHERE;
+    marker.action = visualization_msgs::Marker::ADD;
+    marker.color.a = 1.0;
+    marker.color.r = 0.0;
+    marker.color.g = 1.0;
+    marker.color.b = 0.0;
+  }
 
   for (int i = 0; i < all_frames.size(); i++) {
     geometry_msgs::Pose pose_msg;
@@ -452,6 +470,37 @@ void publish_all_poses_quadric(std::vector<tracking_frame_quadric*> all_frames,
     }
     // publish camera pose estimation of this frame
     if (frame_number < int(all_pred_pose_odoms.size())) {
+      for (auto landmark = all_frames[frame_number]->observed_quadrics.begin();
+           landmark != all_frames[frame_number]->observed_quadrics.end();
+           ++frame_number) {
+        if ((*landmark)->isDetected) {
+          markers[(*landmark)->class_id].pose.position.x =
+              (*landmark)->Quadric_meas.pose.translation()(0);
+          markers[(*landmark)->class_id].pose.position.x =
+              (*landmark)->Quadric_meas.pose.translation()(1);
+          markers[(*landmark)->class_id].pose.position.x =
+              (*landmark)->Quadric_meas.pose.translation()(2);
+
+          markers[(*landmark)->class_id].pose.orientation.x =
+              (*landmark)->Quadric_meas.pose.rotation().x();
+
+          markers[(*landmark)->class_id].pose.orientation.y =
+              (*landmark)->Quadric_meas.pose.rotation().y();
+          markers[(*landmark)->class_id].pose.orientation.z =
+              (*landmark)->Quadric_meas.pose.rotation().z();
+          markers[(*landmark)->class_id].pose.orientation.w =
+              (*landmark)->Quadric_meas.pose.rotation().w();
+          markers[(*landmark)->class_id].scale.x =
+              (*landmark)->Quadric_meas.scale(0);
+          markers[(*landmark)->class_id].scale.y =
+              (*landmark)->Quadric_meas.scale(1);
+          markers[(*landmark)->class_id].scale.z =
+              (*landmark)->Quadric_meas.scale(2);
+
+          pub_landmark.publish(markers[(*landmark)->class_id]);
+        }
+      }
+
       cout << "visulialization!" << endl;
       pub_slam_odompose.publish(all_pred_pose_odoms[frame_number]);
       pub_truth_odompose.publish(all_truth_pose_odoms[frame_number]);
@@ -847,21 +896,21 @@ void incremental_build_graph_quadric(
             new Detection_result(raw_2d_objs.block(i, 0, 1, 5), frame_index);
         currframe->detect_result.push_back(tempDR);
         tempDR->frame_seq_id = frame_index;
-        // Todo:Data Association,give Detection_result a class
+        // Todo:Data Association,give Detection_result a class number
+        bool associaSuccess = false;
         for (auto landmark = all_landmark.begin();
              landmark != all_landmark.end(); ++landmark) {
           if (1 /*association success*/) {
+            associaSuccess = true;
             tempDR->class_id = (*landmark)->class_id;
-            //            (*landmark)->quadric_tracking.push_back(tempDR);
             break;
           }
         }
-        if (totall_class == 0 /*|| new class*/) {
+        if (!associaSuccess /*|| new class*/) {
           tempDR->class_id = totall_class;
           Quadric_landmark* newLandmark = new Quadric_landmark();
           newLandmark->class_id = totall_class;
           totall_class++;
-          //          newLandmark->quadric_tracking.push_back(tempDR);
           all_landmark.push_back(newLandmark);
         }
       }

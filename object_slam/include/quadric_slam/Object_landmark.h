@@ -69,7 +69,7 @@ class Quadric_landmark {
 
     ComputePlanesParameters(planes, planes_parameter);
 
-    Eigen::Vector3d rotation;
+    Eigen::Matrix3d rotation;
     Eigen::Vector3d shape;
     Eigen::Vector3d translation;
     Eigen::Matrix4d constrained_quadric;
@@ -77,14 +77,16 @@ class Quadric_landmark {
     ComputeDualQuadric(planes_parameter, rotation, shape, translation,
                        constrained_quadric);
 
-    Vector9d minimalVector;
-    minimalVector << translation, rotation, shape;
+    //    Vector9d minimalVector;
+    //    minimalVector << translation, rotation, shape;
     //    cout << "minimalVector" << minimalVector << endl;
 
     if (meas_quality > QUALITY_THRESHOLD) {
       isDetected = NEW_QUADRIC;
-      Quadric_meas = g2o::Quadric();
-      Quadric_meas.fromMinimalVector(minimalVector);
+      Quadric_meas = g2o::Quadric(rotation, translation, shape);
+
+      //      Quadric_meas.fromMinimalVector(minimalVector);
+
       //      cout << "minimalVector" << minimalVector << endl;
       //      cout << "Quadric_meas.pose " << Quadric_meas.pose << endl;
       //      cout << "Quadric_meas.scale " << Quadric_meas.scale << endl;

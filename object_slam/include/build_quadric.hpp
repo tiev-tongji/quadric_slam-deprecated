@@ -1,4 +1,4 @@
-#include <Eigen/Core>
+﻿#include <Eigen/Core>
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
 #include <Eigen/SVD>
@@ -110,10 +110,10 @@ void ComputeLineMat(
     std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>>&
         lines) {
   for (int i = 0; i < bboxes.size(); i += 2) {
-    lines.push_back(Eigen::Vector3d(1, 0, -bboxes[i](0) - bboxes[i](2) / 2));
-    lines.push_back(Eigen::Vector3d(0, 1, -bboxes[i](1) - bboxes[i](3) / 2));
-    lines.push_back(Eigen::Vector3d(1, 0, -bboxes[i](0) + bboxes[i](2) / 2));
-    lines.push_back(Eigen::Vector3d(0, 1, -bboxes[i](1) + bboxes[i](3) / 2));
+    lines.push_back(Eigen::Vector3d(1, 0, -(bboxes[i](0) - bboxes[i](2) / 2)));
+    lines.push_back(Eigen::Vector3d(0, 1, -(bboxes[i](1) - bboxes[i](3) / 2)));
+    lines.push_back(Eigen::Vector3d(1, 0, -(bboxes[i](0) + bboxes[i](2) / 2)));
+    lines.push_back(Eigen::Vector3d(0, 1, -(bboxes[i](1) + bboxes[i](3) / 2)));
   }
 }
 Eigen::Matrix3d Quater2Rotation(const double& x,
@@ -235,11 +235,11 @@ void ComputeDualQuadric(
     const vector<Eigen::Matrix<double, 1, 10>,
                  Eigen::aligned_allocator<Eigen::Matrix<double, 1, 10>>>&
         planes_parameter,
-    Eigen::Vector3d& rotation,
+    Eigen::Matrix3d& rotation,
     Eigen::Vector3d& shape,
     Eigen::Vector3d& translation,
     Eigen::Matrix4d& constrained_quadric) {
-  ofstream ofile("quadric_parameters.txt", ios::app);
+  //  ofstream ofile("quadric_parameters.txt", ios::app);
 
   int rows = planes_parameter.size();
   cout << "rows=" << rows << endl;
@@ -277,10 +277,7 @@ void ComputeDualQuadric(
        << eigen_vectors << endl
        << endl;
 
-  rotation = eigen_vectors.eulerAngles(2, 1, 0);
-  cout << "The Rotation vector of the Constrained Quadric is " << endl
-       << rotation << endl
-       << endl;
+  rotation = eigen_vectors;
 
   Eigen::Vector3d eigen_values;
   eigen_values = eigen_solver.eigenvalues();
@@ -309,9 +306,9 @@ void ComputeDualQuadric(
   T.block(0, 0, 3, 3) = eigen_vectors;
   T.block(0, 3, 3, 1) = translation;
 
-  ofile << shape.transpose() << " " << T.col(0).transpose() << " "
-        << T.col(1).transpose() << " " << T.col(2).transpose() << " "
-        << T.col(3).transpose() << endl;
+  //  ofile << shape.transpose() << " " << T.col(0).transpose() << " "
+  //        << T.col(1).transpose() << " " << T.col(2).transpose() << " "
+  //        << T.col(3).transpose() << endl;
   Eigen::Vector4d shape_parm;
   shape_parm << pow(shape(0, 0), 2), pow(shape(1, 0), 2), pow(shape(2, 0), 2),
       -1;
