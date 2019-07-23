@@ -160,19 +160,18 @@ class Quadric {
 
   // get rectangles after projection  [topleft, bottomright]
 
-  Matrix3d toConic(const SE3Quat& campose_wc, const Matrix3d& Kalib) const {
+  Matrix3d toConic(const SE3Quat& campose_wc, const Matrix3d& calib) const {
     std::cout << "toConic" << std::endl;
     std::cout << "campose_wc"
               << campose_wc.to_homogeneous_matrix().block(0, 0, 3, 4)
               << std::endl;
     Eigen::Matrix<double, 3, 4> P =
-        Kalib * campose_wc.to_homogeneous_matrix().block(
+        calib * campose_wc.to_homogeneous_matrix().block(
                     0, 0, 3, 4);  // Todo:BUG!! maybe campose_cw
     Matrix4d symMat = this->toSymMat();
     std::cout << "P" << P << std::endl;
-    Matrix3d conic = (P * symMat * P.transpose()).adjoint();
-    std::cout << "toConic end" << conic << std::endl;
-    return conic;
+    Matrix3d conic = (P * symMat * P.transpose());
+    return conic.inverse();
   }
 
   Vector4d projectOntoImageRect(const SE3Quat& campose_wc,
@@ -180,25 +179,32 @@ class Quadric {
     std::cout << "projectOntoImageRect" << std::endl;
     Matrix3d conic = this->toConic(campose_wc, Kalib);
     Vector6d c;
-    c << conic(0, 0), conic(0, 1) / 2, conic(1, 1), conic(0, 2) / 2,
-        conic(1, 2) / 2, conic(2, 2);
+    c << conic(0, 0), conic(0, 1) * 2, conic(1, 1), conic(0, 2) * 2,
+        conic(1, 2) * 2, conic(2, 2);
     Vector2d y, x;
-    y(0) = 4 * c(4) - 2 * c(1) * c(3) +
-           sqrt(pow(2 * c(1) * c(3) - 4 * c(4), 2) -
-                4 * pow(c(1), 2) * (pow(c(3), 2) - 4 * c(5))) /
-               (2 * (pow(c(1), 2) - 4 * c(2)));
-    y(1) = 4 * c(4) - 2 * c(1) * c(3) -
-           sqrt(pow(2 * c(1) * c(3) - 4 * c(4), 2) -
-                4 * pow(c(1), 2) * (pow(c(3), 2) - 4 * c(5))) /
-               (2 * (pow(c(1), 2) - 4 * c(2)));
-    x(0) = 4 * c(3) - 2 * c(1) * c(4) +
-           sqrt(pow(2 * c(1) * c(4) - 4 * c(3), 2) -
-                4 * pow(c(1), 2) * (pow(c(4), 2) - 4 * c(5))) /
-               (2 * (pow(c(1), 2) - 4 * c(0)));
-    x(1) = 4 * c(3) - 2 * c(1) * c(4) -
-           sqrt(pow(2 * c(1) * c(4) - 4 * c(3), 2) -
-                4 * pow(c(1), 2) * (pow(c(4), 2) - 4 * c(5))) /
-               (2 * (pow(c(1), 2) - 4 * c(0)));
+    y(0) = (4 * c(4) * c(0) - 2 * c(1) * c(3) +
+            sqrt(pow(2 * c(1) * c(3) - 4 * c(0) * c(4), 2) -
+                 4 * (pow(c(1), 2) - 4 * c(0) * c(2)) *
+                     (pow(c(3), 2) - 4 * c(0) * c(5)))) /
+           (2 * (pow(c(1), 2) - 4 * c(2) * c(0)));
+
+    y(1) = (4 * c(4) * c(0) - 2 * c(1) * c(3) -
+            sqrt(pow(2 * c(1) * c(3) - 4 * c(0) * c(4), 2) -
+                 4 * (pow(c(1), 2) - 4 * c(0) * c(2)) *
+                     (pow(c(3), 2) - 4 * c(0) * c(5)))) /
+           (2 * (pow(c(1), 2) - 4 * c(2) * c(0)));
+
+    x(0) = (4 * c(3) * c(2) - 2 * c(1) * c(4) +
+            sqrt(pow(2 * c(1) * c(4) - 4 * c(2) * c(3), 2) -
+                 4 * (pow(c(1), 2) - 4 * c(0) * c(2)) *
+                     (pow(c(4), 2) - 4 * c(2) * c(5)))) /
+           (2 * (pow(c(1), 2) - 4 * c(2) * c(0)));
+
+    x(1) = (4 * c(3) * c(2) - 2 * c(1) * c(4) -
+            sqrt(pow(2 * c(1) * c(4) - 4 * c(2) * c(3), 2) -
+                 4 * (pow(c(1), 2) - 4 * c(0) * c(2)) *
+                     (pow(c(4), 2) - 4 * c(2) * c(5)))) /
+           (2 * (pow(c(1), 2) - 4 * c(2) * c(0)));
     Vector2d bottomright;  // x y
     Vector2d topleft;
     bottomright(0) = x.maxCoeff();
@@ -212,6 +218,39 @@ class Quadric {
               << std::endl;
     return Vector4d(topleft(0), topleft(1), bottomright(0), bottomright(1));
   }
+
+  //  Vector4d projectOntoImageRect(const SE3Quat& campose_wc,
+  //                                const Matrix3d& calib) const {
+  //    std::cout << "projectOntoImageRect" << std::endl;
+  //    Matrix3d conic = this->toConic(campose_wc, calib);
+  //    assert(conic.determinant() < 0);
+  //    Vector6d c;
+  //    c << conic(0, 0), conic(0, 1) * 2, conic(1, 1), conic(0, 2) * 2,
+  //        conic(1, 2) * 2, conic(2, 2);
+  //    std::cout << "c: " << c << std::endl;
+  //    double centerX =
+  //        (2 * c(2) * c(3) - c(1) * c(4)) / (c(1) * c(1) - 4 * c(0) * c(2));
+  //    double centerY =
+  //        (2 * c(0) * c(4) - c(1) * c(3)) / (c(1) * c(1) - 4 * c(0) * c(2));
+
+  //    double theta = abs(
+  //        atan((c(2) - c(0) - sqrt((c(0) - c(2)) * (c(0) - c(2)) + c(1) *
+  //        c(1))) /
+  //             c(1)));
+
+  //    Vector2d bottomright;  // x y
+  //    Vector2d topleft;
+  //    bottomright(0) = centerX + 10;
+  //    bottomright(1) = centerY + 10;
+  //    topleft(0) = centerX - 10;
+  //    topleft(1) = centerY - 10;
+  //    // Todo:conic at boundary
+  //    std::cout << "projectOntoImageRect end"
+  //              << Vector4d(topleft(0), topleft(1), bottomright(0),
+  //                          bottomright(1))
+  //              << std::endl;
+  //    return Vector4d(topleft(0), topleft(1), bottomright(0), bottomright(1));
+  //  }
 
   // get rectangles after projection  [center, width, height]
   Vector4d projectOntoImageBbox(const SE3Quat& campose_wc,

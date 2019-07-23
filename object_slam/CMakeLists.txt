@@ -58,8 +58,8 @@ include_directories(
 )
 
 SET(CMAKE_BUILD_TYPE Release)
-# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall   -O3 -march=native")
-
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -march=native")
+#-pipe -Ofast
 # C++11
 # set_source_files_properties(${SRCS} PROPERTIES COMPILE_FLAGS -std=c++0x)
 # set(CMAKE_EXE_LINKER_FLAGS "-Wl,-rpath,. -L${CMAKE_CURRENT_BINARY_DIR}")

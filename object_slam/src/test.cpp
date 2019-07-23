@@ -38,43 +38,51 @@ int main() {
   calib << 520.9, 0, 325.1, 0, 521.0, 249.7, 0, 0, 1;
 
   Quadric quadric = Quadric();
+  std::cout << "read file\n" << std::endl << std::endl;
   Eigen::MatrixXd rawQuadric(4, 19);
   read_all_number_txt(base_folder + "quadric_parameters.txt", rawQuadric);
-
+  std::cout << "read file\n" << std::endl << std::endl;
   Eigen::MatrixXd rawCamPose(35, 16);
   read_all_number_txt(base_folder + "camera_rt35.txt", rawCamPose);
 
   std::cout << "rawQuadric \n" << rawQuadric << std::endl << std::endl;
   std::cout << "rawCamPose \n" << rawCamPose << std::endl;
-  // set quadric
-  quadric.scale = rawQuadric.block(0, 0, 1, 3);
-  Eigen::MatrixXd Rq(3, 3);
-  Rq.block(0, 0, 1, 3) = rawQuadric.block(0, 3, 1, 3);
-  Rq.block(1, 0, 1, 3) = rawQuadric.block(0, 7, 1, 3);
-  Rq.block(2, 0, 1, 3) = rawQuadric.block(0, 11, 1, 3);
-  std::cout << "Rq" << Rq << std::endl;
 
-  Vector3d Tq = rawQuadric.block(0, 15, 1, 3);
-  std::cout << "Tq" << Tq << std::endl;
+  std::cout << "read image" << std::endl;
+  cv::Mat src = imread(
+      "/home/jerryai/Documents/slam/quadricslam_ws/src/quadric_slam/"
+      "object_slam/data/quadic_test_data/1311873050.488248.png");
 
-  quadric.pose = SE3Quat(Rq, Tq);
+  for (int i = 0; i < 4; i++) {
+    // set quadric
+    quadric.scale = rawQuadric.block(i, 0, 1, 3).transpose();
+    Eigen::MatrixXd Rq(3, 3);
+    Rq.block(0, 0, 3, 1) = rawQuadric.block(i, 3, 1, 3).transpose();
+    Rq.block(0, 1, 3, 1) = rawQuadric.block(i, 7, 1, 3).transpose();
+    Rq.block(0, 2, 3, 1) = rawQuadric.block(i, 11, 1, 3).transpose();
 
-  // set cam pose
-  Eigen::MatrixXd Rc(3, 3);
-  Rc.block(0, 0, 1, 3) = rawCamPose.block(0, 0, 1, 3);
-  Rc.block(1, 0, 1, 3) = rawCamPose.block(0, 4, 1, 3);
-  Rc.block(2, 0, 1, 3) = rawCamPose.block(0, 8, 1, 3);
-  Vector3d Tc = rawQuadric.block(0, 12, 1, 3);
-  std::cout << "Rc" << Rc << std::endl;
-  std::cout << "Tc" << Tc << std::endl;
-  SE3Quat camPose = SE3Quat(Rc, Tc);
+    std::cout << "Rq" << Rq << std::endl;
 
-  Vector4d bbox = quadric.projectOntoImageRect(camPose.inverse(), calib);
-  cv::Mat src = imread(base_folder + "1311867170.462290.png");
+    Vector3d Tq = rawQuadric.block(i, 15, 1, 3).transpose();
+    std::cout << "Tq" << Tq << std::endl;
 
-  cv::rectangle(src, Point(bbox(0), bbox(1)), Point(bbox(2), bbox(3)),
-                Scalar(255, 0, 0), 1, LINE_8, 0);
+    quadric.pose = SE3Quat(Rq, Tq);
 
+    // set cam pose
+    Eigen::MatrixXd Rc(3, 3);
+    Rc.block(0, 0, 3, 1) = rawCamPose.block(0, 0, 1, 3).transpose();
+    Rc.block(0, 1, 3, 1) = rawCamPose.block(0, 4, 1, 3).transpose();
+    Rc.block(0, 2, 3, 1) = rawCamPose.block(0, 8, 1, 3).transpose();
+    Vector3d Tc = rawCamPose.block(0, 12, 1, 3).transpose();
+    std::cout << "Rc" << Rc << std::endl;
+    std::cout << "Tc" << Tc << std::endl;
+    SE3Quat camPose = SE3Quat(Rc, Tc);
+    Vector4d bbox = quadric.projectOntoImageRect(camPose.inverse(), calib);
+
+    cv::rectangle(src, Point(bbox(0), bbox(1)), Point(bbox(2), bbox(3)),
+                  Scalar(0, i * 40, 150), 1, LINE_8, 0);
+  }
+  std::cout << "show image" << std::endl;
   cv::imshow("src", src);
   cv::waitKey(0);
 
