@@ -1,3 +1,4 @@
+#include <dirent.h>
 #include <algorithm>
 #include <ctime>
 #include <fstream>
@@ -31,9 +32,24 @@
 #include <quadric_slam/g2o_Object.h>
 
 using namespace g2o;
+
+void getFiles(string path, vector<string>& files) {
+  DIR* dir;
+  struct dirent* ptr;
+  dir = opendir((char*)path.c_str());
+  while ((ptr = readdir(dir)) != NULL) {
+    files.push_back(path + ptr->d_name);
+  }
+  return;
+}
+
 int main() {
   std::string base_folder =
       ros::package::getPath("object_slam") + "/data/quadic_test_data/";
+
+  vector<string> files;
+  getFiles(base_folder, files);
+
   Matrix3d calib;
   calib << 520.9, 0, 325.1, 0, 521.0, 249.7, 0, 0, 1;
 
@@ -49,42 +65,48 @@ int main() {
   std::cout << "rawCamPose \n" << rawCamPose << std::endl;
 
   std::cout << "read image" << std::endl;
-  cv::Mat src = imread(
-      "/home/jerryai/Documents/slam/quadricslam_ws/src/quadric_slam/"
-      "object_slam/data/quadic_test_data/1311873050.488248.png");
+  for (int j = 0; j < 35; j++) {
+    cv::Mat src = imread(
+        "/home/jerryai/Documents/slam/quadricslam_ws/src/quadric_slam/"
+        "object_slam/data/quadic_test_data/1311873050.488248.png");
+    for (int i = 0; i < 4; i++) {
+      // set quadric
+      quadric.scale = rawQuadric.block(i, 0, 1, 3).transpose();
+      Eigen::MatrixXd Rq(3, 3);
+      Rq.block(0, 0, 3, 1) = rawQuadric.block(i, 3, 1, 3).transpose();
+      Rq.block(0, 1, 3, 1) = rawQuadric.block(i, 7, 1, 3).transpose();
+      Rq.block(0, 2, 3, 1) = rawQuadric.block(i, 11, 1, 3).transpose();
 
-  for (int i = 0; i < 4; i++) {
-    // set quadric
-    quadric.scale = rawQuadric.block(i, 0, 1, 3).transpose();
-    Eigen::MatrixXd Rq(3, 3);
-    Rq.block(0, 0, 3, 1) = rawQuadric.block(i, 3, 1, 3).transpose();
-    Rq.block(0, 1, 3, 1) = rawQuadric.block(i, 7, 1, 3).transpose();
-    Rq.block(0, 2, 3, 1) = rawQuadric.block(i, 11, 1, 3).transpose();
+      std::cout << "Rq" << Rq << std::endl;
+      std::cout << "Rq.det" << Rq.determinant() << std::endl;
+      Vector3d Tq = rawQuadric.block(i, 15, 1, 3).transpose();
+      std::cout << "Tq" << Tq << std::endl;
+      quadric.pose = SE3Quat(Rq, Tq);
+      std::cout << "rotation matrix"
+                << quadric.pose.rotation().toRotationMatrix() << std::endl;
+      std::cout << "E"
+                << Rq * quadric.pose.rotation()
+                            .toRotationMatrix()
+                            .block(0, 0, 3, 3)
+                            .inverse()
+                << std::endl;
+      // set cam pose
+      Eigen::MatrixXd Rc(3, 3);
+      Rc.block(0, 0, 3, 1) = rawCamPose.block(j, 0, 1, 3).transpose();
+      Rc.block(0, 1, 3, 1) = rawCamPose.block(j, 4, 1, 3).transpose();
+      Rc.block(0, 2, 3, 1) = rawCamPose.block(j, 8, 1, 3).transpose();
+      Vector3d Tc = rawCamPose.block(j, 12, 1, 3).transpose();
+      std::cout << "Rc" << Rc << std::endl;
+      std::cout << "Tc" << Tc << std::endl;
+      SE3Quat camPose = SE3Quat(Rc, Tc);
+      Vector4d bbox = quadric.projectOntoImageRect(camPose.inverse(), calib);
 
-    std::cout << "Rq" << Rq << std::endl;
-
-    Vector3d Tq = rawQuadric.block(i, 15, 1, 3).transpose();
-    std::cout << "Tq" << Tq << std::endl;
-
-    quadric.pose = SE3Quat(Rq, Tq);
-
-    // set cam pose
-    Eigen::MatrixXd Rc(3, 3);
-    Rc.block(0, 0, 3, 1) = rawCamPose.block(0, 0, 1, 3).transpose();
-    Rc.block(0, 1, 3, 1) = rawCamPose.block(0, 4, 1, 3).transpose();
-    Rc.block(0, 2, 3, 1) = rawCamPose.block(0, 8, 1, 3).transpose();
-    Vector3d Tc = rawCamPose.block(0, 12, 1, 3).transpose();
-    std::cout << "Rc" << Rc << std::endl;
-    std::cout << "Tc" << Tc << std::endl;
-    SE3Quat camPose = SE3Quat(Rc, Tc);
-    Vector4d bbox = quadric.projectOntoImageRect(camPose.inverse(), calib);
-
-    cv::rectangle(src, Point(bbox(0), bbox(1)), Point(bbox(2), bbox(3)),
-                  Scalar(0, i * 40, 150), 1, LINE_8, 0);
+      cv::rectangle(src, Point(bbox(0), bbox(1)), Point(bbox(2), bbox(3)),
+                    Scalar(0, i * 40, 150), 1, LINE_8, 0);
+    }
+    std::cout << "show image" << std::endl;
+    cv::imshow("src", src);
+    cv::waitKey(0);
   }
-  std::cout << "show image" << std::endl;
-  cv::imshow("src", src);
-  cv::waitKey(0);
-
   return 0;
 }

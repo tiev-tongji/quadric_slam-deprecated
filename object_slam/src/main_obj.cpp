@@ -871,8 +871,6 @@ void incremental_build_graph_quadric(
     currframe->frame_seq_id = frame_index;
     all_frames.push_back(currframe);
 
-    g2o::Quadric quadric_local_meas;
-    double proposal_error;
     char frame_index_c[256];
     sprintf(frame_index_c, "%04d", frame_index);  // format into 4 digit
 
@@ -890,13 +888,15 @@ void incremental_build_graph_quadric(
         return;
       raw_2d_objs.leftCols<2>().array() -=
           1;  // change matlab coordinate to c++, minus 1
-
+      cout << "change matlab coordinate to c++" << endl;
       for (int i = 0; i < raw_2d_objs.rows(); i++) {
-        Detection_result* tempDR =
-            new Detection_result(raw_2d_objs.block(i, 0, 1, 5), frame_index);
+        Vector5d temp = raw_2d_objs.block(i, 0, 1, 5).transpose();
+        cout << "raw_2d_objs.block(i, 0, 1, 5)" << raw_2d_objs.block(i, 0, 1, 5)
+             << endl;
+        Detection_result* tempDR = new Detection_result(temp, frame_index);
         currframe->detect_result.push_back(tempDR);
-        tempDR->frame_seq_id = frame_index;
         // Todo:Data Association,give Detection_result a class number
+        cout << "data association" << endl;
         bool associaSuccess = false;
         for (auto landmark = all_landmark.begin();
              landmark != all_landmark.end(); ++landmark) {
@@ -914,7 +914,7 @@ void incremental_build_graph_quadric(
           all_landmark.push_back(newLandmark);
         }
       }
-
+      cout << "totall class" << totall_class << endl;
       // detect_cuboid_obj.detect_cuboid(raw_rgb_img, transToWolrd,raw_2d_objs,
       //                                 all_lines_raw, frames_cuboids);
       // currframe->cuboids_2d_img = detect_cuboid_obj.cuboids_2d_img;
@@ -986,8 +986,8 @@ void incremental_build_graph_quadric(
       e->setInformation(info);
       graph.addEdge(e);
       // do optimization!
-      graph.initializeOptimization();
-      graph.optimize(5);
+      //      graph.initializeOptimization();
+      //      graph.optimize(5);
     }
     // update camera pose
     for (int j = 0; j <= frame_index; j++) {
@@ -1081,8 +1081,8 @@ void incremental_build_graph_quadric(
     if (landmarkUpdate) {
       graph.initializeOptimization();
       graph.optimize(1);
-      //      if (frame_index > 34)
-      //        break;
+      if (frame_index > 33)
+        break;
     }
     cout << "update camera pose" << endl;
     // update camera pose and quadric

@@ -32,7 +32,9 @@ class Quadric {
   }
 
   Quadric(const Matrix3d& R, const Vector3d& t, const Vector3d& inputScale) {
+    std::cout << "R" << R << std::endl;
     pose = SE3Quat(R, t);
+    std::cout << "POSE" << pose << std::endl;
     scale = inputScale;
   }
   // v = (t1,t2,t3,theta1,theta2,theta3,s1,s2,s3)
@@ -105,7 +107,7 @@ class Quadric {
   // apply update to current quadric, exponential map
   Quadric exp_update(const Vector9d& update) {
     Quadric res;
-    res.pose = this->pose * SE3Quat::exp(update.head<6>());
+    res.pose = SE3Quat::exp(update.head<6>()) * this->pose;
     res.scale = this->scale + update.tail<3>();
     return res;
   }
@@ -331,9 +333,14 @@ class EdgeSE3QuadricProj
 
     Vector4d rect_project = global_quadric.projectOntoImageBbox(
         cam_pose_Tcw, calib);  // center, width, height
+    std::cout << "global_quadric.pose: " << global_quadric.pose << std::endl;
+    std::cout << "global_quadric.scale " << global_quadric.scale << std::endl;
+    //    std::cout << "_measurement: " << _measurement << std::endl;
+    std::cout << "rect_project: " << rect_project << std::endl;
 
     _error = rect_project - _measurement;
     std::cout << "_error: " << _error << std::endl;
+    std::abort();
   }
 
   Matrix3d calib;

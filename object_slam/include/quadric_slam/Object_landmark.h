@@ -13,9 +13,10 @@ class Detection_result {
   int class_id;
   int frame_seq_id;
 
-  Detection_result(Vector5d raw_2d_objs, int frame_seq_id) {
+  Detection_result(Vector5d raw_2d_objs, int input_frame_seq_id) {
     bbox = raw_2d_objs.head(4);
     prop = raw_2d_objs(4);
+    frame_seq_id = input_frame_seq_id;
   }
 };
 
@@ -53,6 +54,7 @@ class Quadric_landmark {
          ++bbox) {
       bboxes.push_back((*bbox)->bbox.head(4));
     }
+    assert(projection_matrix.size() == bboxes.size());
 
     std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>>
         lines;
@@ -77,14 +79,21 @@ class Quadric_landmark {
     ComputeDualQuadric(planes_parameter, rotation, shape, translation,
                        constrained_quadric);
 
-    //    Vector9d minimalVector;
-    //    minimalVector << translation, rotation, shape;
-    //    cout << "minimalVector" << minimalVector << endl;
-
     if (meas_quality > QUALITY_THRESHOLD) {
       isDetected = NEW_QUADRIC;
+      cout << "rotation.det" << rotation.determinant() << endl;
       Quadric_meas = g2o::Quadric(rotation, translation, shape);
-
+      Eigen::Matrix3d calib;
+      calib << 520.9, 0, 325.1, 0, 521.0, 249.7, 0, 0, 1;
+      for (auto matrix = projection_matrix.begin();
+           matrix != projection_matrix.end(); ++matrix) {
+        cout << "project back: "
+             << Quadric_meas.projectOntoImageBbox(
+                    g2o::SE3Quat(matrix->block(0, 0, 3, 3),
+                                 matrix->block(0, 3, 3, 1)),
+                    calib)
+             << endl;
+      }
       //      Quadric_meas.fromMinimalVector(minimalVector);
 
       //      cout << "minimalVector" << minimalVector << endl;

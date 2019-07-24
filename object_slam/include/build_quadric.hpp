@@ -109,7 +109,7 @@ void ComputeLineMat(
         bboxes,
     std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>>&
         lines) {
-  for (int i = 0; i < bboxes.size(); i += 2) {
+  for (int i = 0; i < bboxes.size(); i++) {
     lines.push_back(Eigen::Vector3d(1, 0, -(bboxes[i](0) - bboxes[i](2) / 2)));
     lines.push_back(Eigen::Vector3d(0, 1, -(bboxes[i](1) - bboxes[i](3) / 2)));
     lines.push_back(Eigen::Vector3d(1, 0, -(bboxes[i](0) + bboxes[i](2) / 2)));
