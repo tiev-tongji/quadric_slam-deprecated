@@ -32,6 +32,7 @@ class Quadric_landmark {
   DETECT_RESULT isDetected;  //
   int class_id;
   void quadric_detection(
+      const Eigen::Matrix<double, 3, 3>& calib,
       vector<Eigen::Matrix<double, 3, 4>,
              Eigen::aligned_allocator<Eigen::Matrix<double, 3, 4>>>
           projection_matrix) {  //        // Todo:detect or update quadric
@@ -41,8 +42,8 @@ class Quadric_landmark {
       isDetected = UPDATE_QUADRIC;
       return;
     }
-    if (quadric_tracking.size() < 34) {
-      cout << "need more frame" << endl;
+    if (quadric_tracking.size() < 20) {
+      cout << "need more frame, size: " << quadric_tracking.size() << endl;
       isDetected = NO_QUADRIC;
       return;
     }
@@ -59,11 +60,12 @@ class Quadric_landmark {
     std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>>
         lines;
     ComputeLineMat(bboxes, lines);
+    //    std::cout << "lines.size: " << lines.size() << std::endl;
     assert(lines.size() / 4 == projection_matrix.size());
 
     std::vector<Eigen::Vector4d, Eigen::aligned_allocator<Eigen::Vector4d>>
         planes;
-    ComputePlanesMat(projection_matrix, lines, planes);
+    ComputePlanesMat(calib, projection_matrix, lines, planes);
 
     std::vector<Eigen::Matrix<double, 1, 10>,
                 Eigen::aligned_allocator<Eigen::Matrix<double, 1, 10>>>
@@ -81,19 +83,19 @@ class Quadric_landmark {
 
     if (meas_quality > QUALITY_THRESHOLD) {
       isDetected = NEW_QUADRIC;
-      cout << "rotation.det" << rotation.determinant() << endl;
+      //      cout << "rotation.det" << rotation.determinant() << endl;
       Quadric_meas = g2o::Quadric(rotation, translation, shape);
-      Eigen::Matrix3d calib;
-      calib << 520.9, 0, 325.1, 0, 521.0, 249.7, 0, 0, 1;
-      for (auto matrix = projection_matrix.begin();
-           matrix != projection_matrix.end(); ++matrix) {
-        cout << "project back: "
-             << Quadric_meas.projectOntoImageBbox(
-                    g2o::SE3Quat(matrix->block(0, 0, 3, 3),
-                                 matrix->block(0, 3, 3, 1)),
-                    calib)
-             << endl;
-      }
+      //      for (auto matrix = projection_matrix.begin();
+      //           matrix != projection_matrix.end(); ++matrix) {
+      //        cout << distance(projection_matrix.begin(), matrix) << endl;
+      //        cout << "project : " << calib * (*matrix) << endl;
+      //        cout << "project back: "
+      //             << Quadric_meas.projectOntoImageBbox(
+      //                    g2o::SE3Quat(matrix->block(0, 0, 3, 3),
+      //                                 matrix->block(0, 3, 3, 1)),
+      //                    calib)
+      //             << endl;
+      //      }
       //      Quadric_meas.fromMinimalVector(minimalVector);
 
       //      cout << "minimalVector" << minimalVector << endl;

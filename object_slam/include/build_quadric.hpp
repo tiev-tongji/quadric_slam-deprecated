@@ -190,14 +190,15 @@ void ComputeProjectionMat(
 
     projection_matrix.push_back(projection);
   }
-  for (int i = 0; i < projection_matrix.size(); i++) {
-    cout << "The Projection of Frame " << i << " is " << endl
-         << projection_matrix[i] << endl
-         << endl;
-  }
+  //  for (int i = 0; i < projection_matrix.size(); i++) {
+  //    cout << "The Projection of Frame " << i << " is " << endl
+  //         << projection_matrix[i] << endl
+  //         << endl;
+  //  }
 }
 
 void ComputePlanesMat(
+    const Eigen::Matrix<double, 3, 3>& calib,
     const vector<Eigen::Matrix<double, 3, 4>,
                  Eigen::aligned_allocator<Eigen::Matrix<double, 3, 4>>>&
         projection_matrix,
@@ -206,7 +207,9 @@ void ComputePlanesMat(
     std::vector<Eigen::Vector4d, Eigen::aligned_allocator<Eigen::Vector4d>>&
         planes) {
   for (int i = 0; i < lines.size(); i++) {
-    planes.push_back(projection_matrix[i / 4].transpose() * lines[i]);
+    //    cout << lines[i] << endl;
+    //    cout << calib * projection_matrix[i / 4] << endl;
+    planes.push_back((calib * projection_matrix[i / 4]).transpose() * lines[i]);
   }
 }
 
@@ -226,7 +229,7 @@ void ComputePlanesParameters(
         pow((*it)(1, 0), 2), 2 * (*it)(1, 0) * (*it)(2, 0),
         2 * (*it)(1, 0) * (*it)(3, 0), pow((*it)(2, 0), 2),
         2 * (*it)(2, 0) * (*it)(3, 0), pow((*it)(3, 0), 2);
-
+    //    cout << "parm " << parm << endl;
     planes_parameter.push_back(parm);
   }
 }
@@ -263,9 +266,9 @@ void ComputeDualQuadric(
       dual_quadric_parm(0, 8), dual_quadric_parm(0, 9);
 
   raw_quadric = dual_quadric.inverse() * cbrt(dual_quadric.determinant());
-  cout << "The Primary Form of Quadric is " << endl
-       << raw_quadric << endl
-       << endl;
+  //  cout << "The Primary Form of Quadric is " << endl
+  //       << raw_quadric << endl
+  //       << endl;
 
   Eigen::Matrix3d quadric_33;
   quadric_33 = raw_quadric.block(0, 0, 3, 3);
