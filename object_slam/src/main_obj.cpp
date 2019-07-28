@@ -418,52 +418,6 @@ void publish_all_poses_quadric(std::vector<tracking_frame_quadric*> all_frames,
   ros::Publisher pub_truth_odompose =
       n.advertise<nav_msgs::Odometry>("/truth_odom_pose", 10);
 
-  ros::Publisher pub_landmark_test =
-      n.advertise<visualization_msgs::Marker>("/visualization_marker_test", 10);
-
-  visualization_msgs::Marker marker;
-  // Set the frame ID and timestamp.  See the TF tutorials for information on
-  // these.
-  marker.header.frame_id = "/world";
-  marker.header.stamp = ros::Time::now();
-
-  // Set the namespace and id for this marker.  This serves to create a unique
-  // ID Any marker sent with the same namespace and id will overwrite the old
-  // one
-  //  marker.ns = "basic_shapes";
-  marker.id = 0;
-
-  // Set the marker type.  Initially this is CUBE, and cycles between that and
-  // SPHERE, ARROW, and CYLINDER
-  marker.type = visualization_msgs::Marker::SPHERE;
-
-  // Set the marker action.  Options are ADD, DELETE, and new in ROS Indigo: 3
-  // (DELETEALL)
-  marker.action = visualization_msgs::Marker::ADD;
-
-  // Set the pose of the marker.  This is a full 6DOF pose relative to the
-  // frame/time specified in the header
-  marker.pose.position.x = 0;
-  marker.pose.position.y = 0;
-  marker.pose.position.z = 0;
-  marker.pose.orientation.x = 0.0;
-  marker.pose.orientation.y = 0.0;
-  marker.pose.orientation.z = 0.0;
-  marker.pose.orientation.w = 1.0;
-
-  // Set the scale of the marker -- 1x1x1 here means 1m on a side
-  marker.scale.x = 1.0;
-  marker.scale.y = 1.0;
-  marker.scale.z = 1.0;
-
-  // Set the color -- be sure to set alpha to something non-zero!
-  marker.color.r = 0.0f;
-  marker.color.g = 1.0f;
-  marker.color.b = 0.0f;
-  marker.color.a = 1.0;
-
-  marker.lifetime = ros::Duration();
-
   ros::Publisher pub_landmark =
       n.advertise<visualization_msgs::MarkerArray>("/visualization_marker", 10);
 
@@ -485,10 +439,29 @@ void publish_all_poses_quadric(std::vector<tracking_frame_quadric*> all_frames,
     marker.type = visualization_msgs::Marker::SPHERE;
     marker.action = visualization_msgs::Marker::ADD;
     marker.color.a = 1.0;
-    marker.color.r = 0.0;
-    marker.color.g = 1.0;
-    marker.color.b = 0.0;
     marker.lifetime = ros::Duration();
+    switch (i) {
+      case 0:
+        marker.color.r = 0.0;
+        marker.color.g = 1.0;
+        marker.color.b = 0.0;
+        break;
+      case 1:
+        marker.color.r = 1.0;
+        marker.color.g = 0.0;
+        marker.color.b = 0.0;
+        break;
+      case 2:
+        marker.color.r = 0.0;
+        marker.color.g = 0.0;
+        marker.color.b = 1.0;
+        break;
+      case 3:
+        marker.color.r = 1.0;
+        marker.color.g = 0.0;
+        marker.color.b = 1.0;
+        break;
+    }
     markers.markers.push_back(marker);
   }
 
@@ -504,6 +477,7 @@ void publish_all_poses_quadric(std::vector<tracking_frame_quadric*> all_frames,
     nav_msgs::Odometry odom_msg;
     odom_msg.pose.pose = pose_msg;
     odom_msg.header = pose_header;
+
     all_truth_pose_odoms.push_back(odom_msg);
   }
 
@@ -515,7 +489,6 @@ void publish_all_poses_quadric(std::vector<tracking_frame_quadric*> all_frames,
   ros::Rate loop_rate(5);  // 5
   int frame_number = -1;
   while (n.ok()) {
-    pub_landmark_test.publish(marker);
     frame_number++;
     if (frame_number == int(all_pred_pose_odoms.size())) {
       cout << "Finish all visulialization!" << endl;
@@ -534,10 +507,8 @@ void publish_all_poses_quadric(std::vector<tracking_frame_quadric*> all_frames,
               (*landmark)->Quadric_meas.pose.translation()(1);
           markers.markers[(*landmark)->class_id].pose.position.z =
               (*landmark)->Quadric_meas.pose.translation()(2);
-
           markers.markers[(*landmark)->class_id].pose.orientation.x =
               (*landmark)->Quadric_meas.pose.rotation().x();
-
           markers.markers[(*landmark)->class_id].pose.orientation.y =
               (*landmark)->Quadric_meas.pose.rotation().y();
           markers.markers[(*landmark)->class_id].pose.orientation.z =
@@ -556,8 +527,8 @@ void publish_all_poses_quadric(std::vector<tracking_frame_quadric*> all_frames,
       cout << "visulialization camera pose!" << endl;
       pub_slam_odompose.publish(all_pred_pose_odoms[frame_number]);
       pub_truth_odompose.publish(all_truth_pose_odoms[frame_number]);
+      pub_landmark.publish(markers);
     }
-    pub_landmark.publish(markers);
     ros::spinOnce();
     loop_rate.sleep();
   }
@@ -942,10 +913,15 @@ void incremental_build_graph_quadric(
       raw_2d_objs.leftCols<2>().array() -=
           1;  // change matlab coordinate to c++, minus 1
       cout << "change matlab coordinate to c++" << endl;
-      for (int i = 0; i < 1 /*raw_2d_objs.rows()*/; i++) {
-        //        Vector5d temp = raw_2d_objs.block(i, 0, 1, 5).transpose();
-        Vector5d temp =
-            detect_result_bbox.block(frame_index * 4, 0, 1, 5).transpose();
+      for (int i = 0; i < 4 /*raw_2d_objs.rows()*/; i++) {
+        // Vector5d temp = raw_2d_objs.block(i, 0, 1, 5).transpose();  // cube
+        // data
+
+        // our date
+        Vector6d temp;
+        temp.block(0, 0, 5, 1) =
+            detect_result_bbox.block(frame_index * 4 + i, 0, 1, 5).transpose();
+        temp(5) = i;
         // change to [x,y,width,height,prop]
         double centreX = (temp(0) + temp(2)) / 2;
         double centreY = (temp(1) + temp(3)) / 2;
@@ -957,14 +933,15 @@ void incremental_build_graph_quadric(
         temp(3) = height;
 
         cout << "detect_result_bbox" << temp << endl;
-        Detection_result* tempDR = new Detection_result(temp, frame_index);
+        Detection_result* tempDR =
+            new Detection_result(temp.head(5), frame_index);
         currframe->detect_result.push_back(tempDR);
         // Todo:Data Association,give Detection_result a class number
         cout << "data association" << endl;
         bool associaSuccess = false;
         for (auto landmark = all_landmark.begin();
              landmark != all_landmark.end(); ++landmark) {
-          if (1 /*association success*/) {
+          if (int(temp(5)) == (*landmark)->class_id /*association success*/) {
             associaSuccess = true;
             tempDR->class_id = (*landmark)->class_id;
             break;
@@ -1101,7 +1078,7 @@ void incremental_build_graph_quadric(
               e->setId(edgeID++);
               Vector4d inv_sigma;
               inv_sigma << 1, 1, 1, 1;
-              inv_sigma = inv_sigma * 2.0 * (*landmark)->meas_quality *
+              inv_sigma = inv_sigma * 1.0 * (*landmark)->meas_quality *
                           (*deteResult)->prop;
               Matrix4d info = inv_sigma.cwiseProduct(inv_sigma).asDiagonal();
               e->setInformation(info);
@@ -1121,7 +1098,7 @@ void incremental_build_graph_quadric(
             Vector4d inv_sigma;
             inv_sigma << 1, 1, 1, 1;
             inv_sigma =
-                inv_sigma * 2.0 * (*landmark)->meas_quality * (*bbox)->prop;
+                inv_sigma * 1.0 * (*landmark)->meas_quality * (*bbox)->prop;
             Matrix4d info = inv_sigma.cwiseProduct(inv_sigma).asDiagonal();
             e->setInformation(info);
             graph.addEdge(e);
@@ -1132,8 +1109,9 @@ void incremental_build_graph_quadric(
     // do optimization!
 
     if (landmarkUpdate) {
+      cout << "landmarkUpdate " << frame_index << endl;
       graph.initializeOptimization();
-      graph.optimize(5);
+      graph.optimize(1);
     }
     cout << "update camera pose" << endl;
     // update camera pose and quadric
@@ -1193,7 +1171,7 @@ int main(int argc, char* argv[]) {
   Eigen::MatrixXd pred_frame_objects(
       100, 10);  // 100 is some large row number, each row in txt has 10 numbers
   Eigen::MatrixXd init_frame_poses(100, 8);
-  Eigen::MatrixXd truth_frame_poses(100, 7);
+  Eigen::MatrixXd truth_frame_poses(100, 7 /*8*/);
   Eigen::MatrixXd detect_result_bbox(150, 6);
   if (!read_all_number_txt(pred_objs_txt, pred_frame_objects))
     return -1;

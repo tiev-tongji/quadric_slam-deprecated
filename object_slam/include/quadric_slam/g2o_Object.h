@@ -313,6 +313,9 @@ class EdgeSE3QuadricProj
     : public BaseBinaryEdge<4, Vector4d, VertexSE3Expmap, VertexQuadric> {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+
+  int cout = 0;
+
   EdgeSE3QuadricProj(){};
 
   virtual bool read(std::istream& is) { return true; };
@@ -336,9 +339,8 @@ class EdgeSE3QuadricProj
     //    global_quadric.scale << std::endl; std::cout << "_measurement: " <<
     //    _measurement << std::endl;
     //    std::cout << "rect_project: " << rect_project << std::endl;
-
     _error = (rect_project - _measurement).array().pow(2);
-    std::cout << "_error: " << _error << std::endl;
+    //    std::cout <<count++<<":  "<< "_error: " << _error << std::endl;
   }
 
   Matrix3d calib;
