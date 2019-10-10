@@ -15,6 +15,8 @@ This code contains a basic implementation for Quaqric SLAM. Given RGB and 2D obj
 * **Probabilistic Data Association for Semantic SLAM**, [**PDF**]http://erl.ucsd.edu/ref/Bowman_SemanticSLAM_ICRA17.pdf
 
 * **Multimodal Semantic SLAM with Probabilistic Data Association**, [**PDF**]https://marinerobotics.mit.edu/sites/default/files/doherty_icra2019_revised.pdf
+
+* **SLAM with Objects using a Nonparametric Pose Graph**. [**PDF**]https://arxiv.org/pdf/1704.05959.pdf
 ## Installation
 
 ### Prerequisites
@@ -73,8 +75,7 @@ You will see results in Rviz. Default rviz file is for ros indigo. A kinetic ver
 - [X] Generate and update quadrics (Quadric_landmark.quadric_detection().
 - [ ] Score quadrics.
 - [ ] Data Association.
-- [ ] Visualization the quadrics and camera pose(publish_all_poses()).
-- [ ] Detect online with yolo.
-- [ ] Offline mode.
+- [X] Visualization the quadrics and camera pose(publish_all_poses()).
+- [X] Detect online with yolo.
 - [X] Find the algorithm to determine the ID of vertex and edge.
 
