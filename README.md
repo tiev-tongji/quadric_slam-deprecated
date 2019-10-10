@@ -1,10 +1,8 @@
-# Quadric SLAM #
+# Quadric SLAM With Probabolistic DataAssociation#
 
 ## Attention: This project is under construction, so it may NOT work well. Contact us freely if you have questions.
 
-This code contains a basic implementation for Cube SLAM. Given RGB and 2D object detection, the algorithm detects 3D cuboids from each frame then formulate an object SLAM to optimize both camera pose and cuboid poses. ```object_slam``` is main package. ```detect_3d_cuboid``` is the C++ version of single image cuboid detection, corresponding to a [matlab version](https://github.com/shichaoy/matlab_cuboid_detect).
-
-**Original Authors:** [Shichao Yang](https://shichaoy.github.io./)
+This code contains a basic implementation for Quaqric SLAM. Given RGB and 2D object detection, the algorithm detects quadrics from several frames then formulate an object SLAM to optimize both camera pose and qadric poses. 
 
 **Authors:** [tiev-tongji]
 
@@ -14,10 +12,9 @@ This code contains a basic implementation for Cube SLAM. Given RGB and 2D object
 
 * **QuadricSLAM: Dual Quadrics From Object Detections as Landmarks in Object-Oriented SLAM**,  IEEE Robotics and Automation Letters ( Volume: 4 , Issue: 1 , Jan. 2019 ), Lachlan Nicholson, Michael Milford, Niko Sünderhauf 
 
-If you use the code in your research work, please cite the above paper. Feel free to contact the authors if you have any further questions.
+* **Probabilistic Data Association for Semantic SLAM**, [**PDF**]http://erl.ucsd.edu/ref/Bowman_SemanticSLAM_ICRA17.pdf
 
-
-
+* **Multimodal Semantic SLAM with Probabilistic Data Association**, [**PDF**]https://marinerobotics.mit.edu/sites/default/files/doherty_icra2019_revised.pdf
 ## Installation
 
 ### Prerequisites

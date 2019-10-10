@@ -31,6 +31,7 @@
 #include <quadric_slam/Object_landmark.h>
 #include <quadric_slam/g2o_Object.h>
 
+
 using namespace g2o;
 
 void getFiles(string path, vector<string>& files) {
