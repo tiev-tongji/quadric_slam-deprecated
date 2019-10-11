@@ -10,6 +10,7 @@ Panels:
         - /TF1/Tree1
         - /Truth poses array1
         - /Truth poses array1/Shape1
+        - /SLAM poses array1
         - /SLAM poses array1/Shape1
         - /MarkerArray1
       Splitter Ratio: 0.6162790060043335
@@ -119,10 +120,10 @@ Visualization Manager:
         Axes Length: 0.10000000149011612
         Axes Radius: 0.009999999776482582
         Color: 239; 41; 41
-        Head Length: 0.30000001192092896
-        Head Radius: 0.10000000149011612
-        Shaft Length: 1
-        Shaft Radius: 0.05000000074505806
+        Head Length: 0.029999999329447746
+        Head Radius: 0.05000000074505806
+        Shaft Length: 0.10000000149011612
+        Shaft Radius: 0.009999999776482582
         Value: Arrow
       Topic: /truth_odom_pose
       Unreliable: false
@@ -176,10 +177,10 @@ Visualization Manager:
         Axes Length: 0.10000000149011612
         Axes Radius: 0.009999999776482582
         Color: 252; 233; 79
-        Head Length: 0.30000001192092896
-        Head Radius: 0.10000000149011612
-        Shaft Length: 1
-        Shaft Radius: 0.05000000074505806
+        Head Length: 0.029999999329447746
+        Head Radius: 0.05000000074505806
+        Shaft Length: 0.10000000149011612
+        Shaft Radius: 0.009999999776482582
         Value: Arrow
       Topic: /slam_odom_pose
       Unreliable: false
@@ -309,25 +310,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 6.738391876220703
+      Distance: 3.9539687633514404
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -0.8468149900436401
-        Y: -0.6847469806671143
-        Z: 0.14847399294376373
+        X: -0.499364972114563
+        Y: -0.20751506090164185
+        Z: 0.29814639687538147
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.2747979164123535
+      Pitch: 1.1197967529296875
       Target Frame: kinect
       Value: Orbit (rviz)
-      Yaw: 2.1946420669555664
+      Yaw: 3.06329345703125
     Saved: ~
 Window Geometry:
   Displays:

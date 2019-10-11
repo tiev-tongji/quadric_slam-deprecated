@@ -12,11 +12,11 @@ This code contains a basic implementation for Quaqric SLAM. Given RGB and 2D obj
 
 * **QuadricSLAM: Dual Quadrics From Object Detections as Landmarks in Object-Oriented SLAM**,  IEEE Robotics and Automation Letters ( Volume: 4 , Issue: 1 , Jan. 2019 ), Lachlan Nicholson, Michael Milford, Niko Sünderhauf 
 
-* **Probabilistic Data Association for Semantic SLAM**, [**PDF**]http://erl.ucsd.edu/ref/Bowman_SemanticSLAM_ICRA17.pdf
+* **Probabilistic Data Association for Semantic SLAM**, [**PDF**](http://erl.ucsd.edu/ref/Bowman_SemanticSLAM_ICRA17.pdf)
 
-* **Multimodal Semantic SLAM with Probabilistic Data Association**, [**PDF**]https://marinerobotics.mit.edu/sites/default/files/doherty_icra2019_revised.pdf
+* **Multimodal Semantic SLAM with Probabilistic Data Association**, [**PDF**](https://marinerobotics.mit.edu/sites/default/files/doherty_icra2019_revised.pdf)
 
-* **SLAM with Objects using a Nonparametric Pose Graph**. [**PDF**]https://arxiv.org/pdf/1704.05959.pdf
+* **SLAM with Objects using a Nonparametric Pose Graph**. [**PDF**](https://arxiv.org/pdf/1704.05959.pdf)
 ## Installation
 
 ### Prerequisites
