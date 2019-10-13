@@ -1,4 +1,4 @@
-# Quadric SLAM With Probabolistic DataAssociation#
+# Quadric SLAM With Probabolistic DataAssociation
 
 Attention: This project is under construction, so it may NOT work well. Contact us freely if you have questions.
 
