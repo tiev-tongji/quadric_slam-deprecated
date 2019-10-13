@@ -49,12 +49,14 @@ You will see results in Rviz. Default rviz file is for ros indigo. A kinetic ver
 
 ## Change Log
 
-### v0.2
+### v1.0
 2019/10/14
 
 - Finished nonparameter data association
 
 - Update README
+
+### v0.2
 
 2019/07/12
 
