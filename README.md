@@ -2,7 +2,7 @@
 
 Attention: This project is under construction, so it may NOT work well. Contact us freely if you have questions.
 
-This code contains a basic implementation for Quaqric SLAM. Given RGB and 2D object detection, the algorithm detects quadrics from several frames then formulate an object SLAM to optimize both camera pose and qadric poses. 
+This code contains a basic implementation for Quaqric SLAM. Given RGB and 2D object detection, the algorithm detects quadrics from several frames then formulate an object SLAM to optimize both camera pose and quadric poses. Besides, we try to use a nonparameter function to solve the data association problem during the process.
 
 **Authors:** [tiev-tongji]
 
