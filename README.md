@@ -1,6 +1,6 @@
 # Quadric SLAM With Probabolistic DataAssociation#
 
-## Attention: This project is under construction, so it may NOT work well. Contact us freely if you have questions.
+Attention: This project is under construction, so it may NOT work well. Contact us freely if you have questions.
 
 This code contains a basic implementation for Quaqric SLAM. Given RGB and 2D object detection, the algorithm detects quadrics from several frames then formulate an object SLAM to optimize both camera pose and qadric poses. 
 
@@ -50,6 +50,11 @@ You will see results in Rviz. Default rviz file is for ros indigo. A kinetic ver
 ## Change Log
 
 ### v0.2
+2019/10/14
+
+- Finished nonparameter data association
+
+- Update README
 
 2019/07/12
 
@@ -74,8 +79,9 @@ You will see results in Rviz. Default rviz file is for ros indigo. A kinetic ver
 ## TODO List
 - [X] Generate and update quadrics (Quadric_landmark.quadric_detection().
 - [ ] Score quadrics.
-- [ ] Data Association.
+- [X] Data Association.
 - [X] Visualization the quadrics and camera pose(publish_all_poses()).
 - [X] Detect online with yolo.
 - [X] Find the algorithm to determine the ID of vertex and edge.
-
+- [ ] Test with KITTI benchmark.
+- [ ] Decide some hyper-parameter.

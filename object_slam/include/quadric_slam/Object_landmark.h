@@ -1,16 +1,19 @@
 #pragma once
 
 #include <quadric_slam/g2o_Object.h>
+#include <Eigen/Dense>
 #include <build_quadric.hpp>
 #include <vector>
 
-#define QUALITY_THRESHOLD 0.5
+#include "distribution.hpp"
 
+#define QUALITY_THRESHOLD 0.5
+#define TOTALL_CLASS 10  // class of detection
 class Detection_result {
  public:
   Vector4d bbox;
   double prop;
-  int class_id;
+  int total_id;
   int frame_seq_id;
 
   Detection_result(Vector5d raw_2d_objs, int input_frame_seq_id) {
@@ -24,13 +27,22 @@ enum DETECT_RESULT { NO_QUADRIC, NEW_QUADRIC, UPDATE_QUADRIC };
 
 class Quadric_landmark {
  public:
-  Quadric_landmark() { isDetected = NO_QUADRIC; }
   g2o::Quadric Quadric_meas;  // cube_value
   g2o::VertexQuadric* quadric_vertex;
   double meas_quality = 0.6;  // [0,1] the higher, the better
   std::vector<Detection_result*> quadric_tracking;
   DETECT_RESULT isDetected;  //
   int class_id;
+  int totall_id;
+  int landmark_id;
+  double classPro;
+  ds::CatDS* ds;
+
+  Quadric_landmark(int totall_id) : totall_id(totall_id) {
+    isDetected = NO_QUADRIC;
+    ds = new ds::CatDS(TOTALL_CLASS);
+  }
+
   void quadric_detection(
       const Eigen::Matrix<double, 3, 3>& calib,
       vector<Eigen::Matrix<double, 3, 4>,
@@ -40,6 +52,9 @@ class Quadric_landmark {
     if (isDetected == NEW_QUADRIC || isDetected == UPDATE_QUADRIC) {
       cout << "quadric has been detected" << endl;
       isDetected = UPDATE_QUADRIC;
+      // update class of landmark
+      ds->update(quadric_tracking.back()->class_id);
+      ds->maxPro(class_id, classPro);
       return;
     }
     if (quadric_tracking.size() < 20) {

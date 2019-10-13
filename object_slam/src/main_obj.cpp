@@ -44,6 +44,7 @@
 
 #include "line_lbd/line_lbd_allclass.h"
 
+#include "distribution.hpp"
 using namespace std;
 using namespace Eigen;
 
@@ -858,12 +859,18 @@ void incremental_build_graph_quadric(
 
   std::vector<tracking_frame_quadric*> all_frames;
   std::vector<Quadric_landmark*> all_landmark;
-  int totall_class = 0;
+  int totall_landmark = 0;
   int vertexID = 0;
   int edgeID = 0;
 
   cout << "total_frame_number: " << total_frame_number << endl;
   cout << "fixed_init_cam_pose_Twc: " << fixed_init_cam_pose_Twc << endl;
+
+  // DP process for the d
+  vector<ds::DPProcess*> dps;
+  for (int i = 0; i < TOTALL_CLASS; ++i) {
+    dps.push_back(new ds::DPProcess(0.1));  // 0.1 is a hyper-parameter
+  }
 
   // process each frame online and incrementally
   for (int frame_index = 0; frame_index < total_frame_number; frame_index++) {
@@ -936,26 +943,52 @@ void incremental_build_graph_quadric(
         Detection_result* tempDR =
             new Detection_result(temp.head(5), frame_index);
         currframe->detect_result.push_back(tempDR);
-        // Todo:Data Association,give Detection_result a class number
+
         cout << "data association" << endl;
-        bool associaSuccess = false;
+        int associaId = -1;
+        double maxPro = 0.0;
+
         for (auto landmark = all_landmark.begin();
              landmark != all_landmark.end(); ++landmark) {
-          if (int(temp(5)) == (*landmark)->class_id /*association success*/) {
-            associaSuccess = true;
-            tempDR->class_id = (*landmark)->class_id;
-            break;
+          double pro =
+              dps[(*landmark)->class_id]->calProb((*landmark)->landmark_id) *
+              (*landmark)->ds->calProb(
+                  int(temp(5))) /* *calPositionPro */;  // Todo:
+          if (pro > maxPro) {
+            maxPro = pro;
+            associaId = (*landmark)->totall_id;
           }
         }
-        if (!associaSuccess /*|| new class*/) {
-          tempDR->class_id = totall_class;
-          Quadric_landmark* newLandmark = new Quadric_landmark();
-          newLandmark->class_id = totall_class;
-          totall_class++;
+        if (maxPro <
+            dps[int(temp(5))]->calProb(dps[int(temp(5))]->totallClass)) {
+          Quadric_landmark* newLandmark = new Quadric_landmark(totall_landmark);
+          newLandmark->class_id = int(temp(5));
+          tempDR->total_id = totall_landmark;
+          totall_landmark++;
           all_landmark.push_back(newLandmark);
+          newLandmark->landmark_id = dps[newLandmark->class_id]->totallClass;
+          dps[newLandmark->class_id]->newClass();
+        } else {
+          all_landmark[associaId]->ds->update(temp(5));
+          int maxCoee;
+          double maxPro;
+          all_landmark[associaId]->ds->maxPro(maxCoee, maxPro);
+          if (maxCoee != all_landmark[associaId]->class_id) {
+            dps[maxCoee]->newClass();
+            dps[all_landmark[associaId]->class_id]->update(
+                all_landmark[associaId]->landmark_id, ds::DECREASE);
+
+            all_landmark[associaId]->class_id = maxCoee;
+            all_landmark[associaId]->landmark_id =
+                dps[maxCoee]->totallClass - 1;
+            tempDR->total_id = associaId;
+          } else {
+            dps[all_landmark[associaId]->class_id]->update(
+                all_landmark[associaId]->landmark_id, ds::INCREASE);
+          }
         }
       }
-      cout << "totall class" << totall_class << endl;
+      cout << "totall class" << totall_landmark << endl;
       // detect_cuboid_obj.detect_cuboid(raw_rgb_img, transToWolrd,raw_2d_objs,
       //                                 all_lines_raw, frames_cuboids);
       // currframe->cuboids_2d_img = detect_cuboid_obj.cuboids_2d_img;
@@ -1043,7 +1076,7 @@ void incremental_build_graph_quadric(
          bbox != currframe->detect_result.end(); ++bbox)
       for (auto landmark = all_landmark.begin(); landmark != all_landmark.end();
            ++landmark)
-        if ((*landmark)->class_id == (*bbox)->class_id) {
+        if ((*landmark)->totall_id == (*bbox)->total_id) {
           (*landmark)->quadric_tracking.push_back(*bbox);
           vector<Eigen::Matrix<double, 3, 4>,
                  Eigen::aligned_allocator<Eigen::Matrix<double, 3, 4>>>
