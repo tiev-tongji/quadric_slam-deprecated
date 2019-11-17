@@ -22,11 +22,11 @@ This code contains a basic implementation for Quaqric SLAM. Given RGB and 2D obj
 ### Prerequisites
 This code contains several ros packages. We test it in **ROS indigo/kinetic/Melodic, Ubuntu 14.04/16.04/18.04, Opencv 2/3**. Create or use existing a ros workspace.
 ```bash
-mkdir -p ~/cubeslam_ws/src
+mkdir -p ~/quadricslam_ws/src
 cd ~/cubeslam_ws/src
 catkin_init_workspace
-git clone git@github.com:shichaoy/cube_slam.git
-cd cube_slam
+git@github.com:tiev-tongji/quadric_slam.git
+cd quadric_slam
 ```
 
 ### Compile dependency g2o
@@ -36,7 +36,7 @@ sh install_dependenices.sh
 
 ### Compile
 ```bash
-cd ~/cubeslam_ws
+cd ~/quadricslam_ws
 catkin_make -j4
 ```
 
