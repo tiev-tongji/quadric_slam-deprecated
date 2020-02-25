@@ -53,7 +53,7 @@ class Quadric_landmark {
       cout << "quadric has been detected" << endl;
       isDetected = UPDATE_QUADRIC;
       // update class of landmark
-      ds->update(quadric_tracking.back()->class_id);
+      ds->update(quadric_tracking.back()->total_id);
       ds->maxPro(class_id, classPro);
       return;
     }

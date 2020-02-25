@@ -950,7 +950,7 @@ void incremental_build_graph_quadric(
 
         for (auto landmark = all_landmark.begin();
              landmark != all_landmark.end(); ++landmark) {
-          double pro =
+          const double pro =
               dps[(*landmark)->class_id]->calProb((*landmark)->landmark_id) *
               (*landmark)->ds->calProb(
                   int(temp(5))) /* *calPositionPro */;  // Todo:

@@ -2,20 +2,23 @@
 #define DISTRIBUTION_HPP
 
 #include <math.h>
+#include <Eigen/Core>
 #include <Eigen/Dense>
+#include <iostream>
+#include <memory>
 #include <random>
 #include <vector>
 
 namespace ds {
 enum DIRECTION { INCREASE, DECREASE };
-class DPProcess {
+class DrProcess {
  public:
   int totallClass;
   Eigen::VectorXd params;
   int sum;
   double alpha;  // para for  new class;
 
-  DPProcess(double alpha) : totallClass(0), alpha(alpha) {}
+  DrProcess(double alpha) : totallClass(0), alpha(alpha), sum(0) {}
 
   double calProb(int classNum) {
     if (classNum > totallClass)
@@ -39,7 +42,7 @@ class DPProcess {
       if (params(classNum) < 0)
         params(classNum) = 0;
       if (sum < 0)
-        sum == 0;
+        sum = 0;
       return true;
     }
   }
@@ -51,31 +54,36 @@ class DPProcess {
   }
 };
 class DirDS {
- public:
+ private:
   int totallClass;  // num of categories;
   Eigen::VectorXd params;
   Eigen::VectorXd samples;
+  std::gamma_distribution<double> gamma;
+  std::default_random_engine generator;
 
-  std::default_random_engine* pGenerator;
-  std::gamma_distribution<double>* pGamma;
-  DirDS(int totallClass) : totallClass(totallClass) {
-    params.resize(totallClass);
-    pGamma = new std::gamma_distribution<double>(1.0, 1.0);
-    pGenerator = new std::default_random_engine;
-  }
+ public:
+  explicit DirDS(int totallClass)
+      : totallClass(totallClass),
+        params(Eigen::VectorXd::Zero(totallClass)),
+        samples(Eigen::VectorXd::Zero(totallClass)),
+        gamma(1.0, 1.0),
+        generator() {}
+
   bool update(int classNum) {
-    if (classNum >= totallClass)
+    if (classNum >= totallClass) {
+      std::cerr << "more than totallClass\n";
       return false;
-    else {
-      params(classNum)++;
+    } else {
+      ++params(classNum);
       return true;
     }
   }
+
   Eigen::VectorXd sampling() {
     samples.resize(totallClass);
     for (int i = 0; i < totallClass; i++) {
-      pGamma->param(params(i), 1.0);
-      samples(i) = (*pGamma)(*pGenerator);
+      gamma.param(std::gamma_distribution<double>::param_type(params(i), 1.0));
+      samples(i) = gamma(generator);
     }
     double sum = samples.sum();
     samples = samples / sum;
@@ -84,17 +92,21 @@ class DirDS {
 };
 
 class CatDS {
- public:
+ private:
   int totallClass;
   Eigen::VectorXd params;
-  DirDS* pDir;
-  CatDS(int totallClass) : totallClass(totallClass) {
-    params.resize(params);
-    pDir = new DirDS(totallClass);
-  }
+  DirDS dir;
+
+ public:
+  CatDS(int totallClass)
+      : totallClass(totallClass),
+        params(Eigen::VectorXd::Zero(totallClass)),
+        dir(totallClass) {}
+
   bool update(int classNum) {
-    pDir->update(classNum);
-    params = pDir->sampling();
+    dir.update(classNum);
+    params = dir.sampling();
+    return true;
   }
   double calProb(int classNum) {
     if (classNum >= totallClass)
@@ -104,7 +116,9 @@ class CatDS {
     }
   }
   void maxPro(int& classNum, double& pro) {
-    pro = params.max(classNum);
+    Eigen::VectorXd::Index maxClass;
+    pro = params.maxCoeff(&maxClass);
+    classNum = int(maxClass);
     return;
   }
 };
