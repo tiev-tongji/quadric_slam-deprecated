@@ -2,6 +2,7 @@
 #include <ctime>
 #include <fstream>
 #include <iostream>
+#include <memory>
 #include <sstream>
 #include <string>
 
@@ -837,18 +838,22 @@ void incremental_build_graph_quadric(
   //  calib << 535.4, 0, 320.1,  // for TUM cabinet data.
   //      0, 539.2, 247.6, 0, 0, 1;
   calib << 520.9, 0, 325.1, 0, 521.0, 249.7, 0, 0, 1;
-  int total_frame_number = truth_frame_poses.rows();
+  const int total_frame_number = truth_frame_poses.rows();
 
   // graph optimization.
-  // NOTE in this example, there is only one object!!! perfect association
+  //  perfect association
   g2o::SparseOptimizer graph;
-  g2o::BlockSolverX::LinearSolverType* linearSolver;
-  linearSolver =
-      new g2o::LinearSolverDense<g2o::BlockSolverX::PoseMatrixType>();
-  g2o::BlockSolverX* solver_ptr = new g2o::BlockSolverX(linearSolver);
-  g2o::OptimizationAlgorithmLevenberg* solver =
-      new g2o::OptimizationAlgorithmLevenberg(solver_ptr);
-  graph.setAlgorithm(solver);
+  //  g2o::BlockSolverX::LinearSolverType* linearSolver;
+  //  linearSolver =
+  //      new g2o::LinearSolverDense<g2o::BlockSolverX::PoseMatrixType>();
+  std::shared_ptr<g2o::BlockSolverX::LinearSolverType> linearSolver =
+      std::make_shared<
+          g2o::LinearSolverDense<g2o::BlockSolverX::PoseMatrixType>>();
+  std::shared_ptr<g2o::BlockSolverX> solver_ptr =
+      std::make_shared<g2o::BlockSolverX>(linearSolver.get());
+  std::shared_ptr<g2o::OptimizationAlgorithmLevenberg> solver =
+      std::make_shared<g2o::OptimizationAlgorithmLevenberg>(solver_ptr.get());
+  graph.setAlgorithm(solver.get());
   graph.setVerbose(false);
 
   // only first truth pose is used. to directly visually compare with truth
@@ -867,9 +872,10 @@ void incremental_build_graph_quadric(
   cout << "fixed_init_cam_pose_Twc: " << fixed_init_cam_pose_Twc << endl;
 
   // DP process for the d
-  vector<ds::DPProcess*> dps;
+  vector<std::shared_ptr<ds::DrProcess>> dps;
   for (int i = 0; i < TOTALL_CLASS; ++i) {
-    dps.push_back(new ds::DPProcess(0.1));  // 0.1 is a hyper-parameter
+    dps.emplace_back(
+        std::make_shared<ds::DrProcess>(0.1));  // 0.1 is a hyper-parameter
   }
 
   // process each frame online and incrementally

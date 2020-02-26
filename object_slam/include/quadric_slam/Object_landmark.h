@@ -7,8 +7,9 @@
 
 #include "distribution.hpp"
 
-#define QUALITY_THRESHOLD 0.5
-#define TOTALL_CLASS 10  // class of detection
+const double QUALITY_THRESHOLD = 0.5;
+const int TOTALL_CLASS = 10;  // class of detection
+
 class Detection_result {
  public:
   Vector4d bbox;
