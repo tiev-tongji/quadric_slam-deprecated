@@ -411,9 +411,10 @@ void publish_all_poses(std::vector<tracking_frame*> all_frames,
   }
 }
 
-void publish_all_poses_quadric(std::vector<tracking_frame_quadric*> all_frames,
-                               const Eigen::MatrixXd& truth_frame_poses,
-                               std::vector<Quadric_landmark*> all_landmarks) {
+void publish_all_poses_quadric(
+    const std::vector<std::shared_ptr<tracking_frame_quadric>>& all_frames,
+    const Eigen::MatrixXd& truth_frame_poses,
+    const std::map<int, std::shared_ptr<Quadric_landmark>>& all_landmarks) {
   ros::NodeHandle n;
   ros::Publisher pub_slam_odompose =
       n.advertise<nav_msgs::Odometry>("/slam_odom_pose", 10);
@@ -429,7 +430,7 @@ void publish_all_poses_quadric(std::vector<tracking_frame_quadric*> all_frames,
   std::vector<nav_msgs::Odometry> all_pred_pose_odoms;
   std::vector<nav_msgs::Odometry> all_truth_pose_odoms;
 
-  int landmarkNum = all_landmarks.size();
+  int landmarkNum = int(all_landmarks.size());
   visualization_msgs::MarkerArray markers;
   //  markers.markers.push_back(marker);
   cout << "landmarkNum" << landmarkNum << endl;
@@ -467,7 +468,7 @@ void publish_all_poses_quadric(std::vector<tracking_frame_quadric*> all_frames,
     markers.markers.push_back(marker);
   }
 
-  for (int i = 0; i < all_frames.size(); i++) {
+  for (size_t i = 0; i < all_frames.size(); i++) {
     geometry_msgs::Pose pose_msg;
     pose_msg.position.x = truth_frame_poses(i, 0);
     pose_msg.position.y = truth_frame_poses(i, 1);
@@ -483,7 +484,7 @@ void publish_all_poses_quadric(std::vector<tracking_frame_quadric*> all_frames,
     all_truth_pose_odoms.push_back(odom_msg);
   }
 
-  for (int i = 0; i < all_frames.size(); i++) {
+  for (size_t i = 0; i < all_frames.size(); i++) {
     all_pred_pose_odoms.push_back(
         posenode_to_odommsgs(all_frames[i]->cam_pose_Twc, pose_header));
   }
@@ -499,30 +500,30 @@ void publish_all_poses_quadric(std::vector<tracking_frame_quadric*> all_frames,
     if (frame_number < int(all_pred_pose_odoms.size())) {
       for (auto landmark = all_landmarks.begin();
            landmark != all_landmarks.end(); ++landmark) {
-        if ((*landmark)->isDetected) {
-          cout << "class_id  " << (*landmark)->class_id << endl;
-          cout << "scale  " << (*landmark)->Quadric_meas.scale << endl;
-          cout << "pose  " << (*landmark)->Quadric_meas.pose << endl;
-          markers.markers[(*landmark)->class_id].pose.position.x =
-              (*landmark)->Quadric_meas.pose.translation()(0);
-          markers.markers[(*landmark)->class_id].pose.position.y =
-              (*landmark)->Quadric_meas.pose.translation()(1);
-          markers.markers[(*landmark)->class_id].pose.position.z =
-              (*landmark)->Quadric_meas.pose.translation()(2);
-          markers.markers[(*landmark)->class_id].pose.orientation.x =
-              (*landmark)->Quadric_meas.pose.rotation().x();
-          markers.markers[(*landmark)->class_id].pose.orientation.y =
-              (*landmark)->Quadric_meas.pose.rotation().y();
-          markers.markers[(*landmark)->class_id].pose.orientation.z =
-              (*landmark)->Quadric_meas.pose.rotation().z();
-          markers.markers[(*landmark)->class_id].pose.orientation.w =
-              (*landmark)->Quadric_meas.pose.rotation().w();
-          markers.markers[(*landmark)->class_id].scale.x =
-              (*landmark)->Quadric_meas.scale(0);
-          markers.markers[(*landmark)->class_id].scale.y =
-              (*landmark)->Quadric_meas.scale(1);
-          markers.markers[(*landmark)->class_id].scale.z =
-              (*landmark)->Quadric_meas.scale(2);
+        if (landmark->second->isDetected) {
+          cout << "class_id  " << landmark->second->class_id << endl;
+          cout << "scale  " << landmark->second->Quadric_meas.scale << endl;
+          cout << "pose  " << landmark->second->Quadric_meas.pose << endl;
+          markers.markers[landmark->second->class_id].pose.position.x =
+              landmark->second->Quadric_meas.pose.translation()(0);
+          markers.markers[landmark->second->class_id].pose.position.y =
+              landmark->second->Quadric_meas.pose.translation()(1);
+          markers.markers[landmark->second->class_id].pose.position.z =
+              landmark->second->Quadric_meas.pose.translation()(2);
+          markers.markers[landmark->second->class_id].pose.orientation.x =
+              landmark->second->Quadric_meas.pose.rotation().x();
+          markers.markers[landmark->second->class_id].pose.orientation.y =
+              landmark->second->Quadric_meas.pose.rotation().y();
+          markers.markers[landmark->second->class_id].pose.orientation.z =
+              landmark->second->Quadric_meas.pose.rotation().z();
+          markers.markers[landmark->second->class_id].pose.orientation.w =
+              landmark->second->Quadric_meas.pose.rotation().w();
+          markers.markers[landmark->second->class_id].scale.x =
+              landmark->second->Quadric_meas.scale(0);
+          markers.markers[landmark->second->class_id].scale.y =
+              landmark->second->Quadric_meas.scale(1);
+          markers.markers[landmark->second->class_id].scale.z =
+              landmark->second->Quadric_meas.scale(2);
         }
       }
       // publish camera pose estimation of this frame
@@ -613,7 +614,7 @@ void incremental_build_graph(Eigen::MatrixXd& offline_pred_frame_objects,
 
     bool has_detected_cuboid = false;
     g2o::cuboid cube_local_meas;
-    double proposal_error;
+    double proposal_error = 1.0;
     char frame_index_c[256];
     sprintf(frame_index_c, "%04d", frame_index);  // format into 4 digit
 
@@ -697,7 +698,7 @@ void incremental_build_graph(Eigen::MatrixXd& offline_pred_frame_objects,
       }
     } else {
       int cube_obs_frame_id =
-          offline_pred_frame_objects(offline_cube_obs_row_id, 0);
+          int(offline_pred_frame_objects(offline_cube_obs_row_id, 0));
       has_detected_cuboid = cube_obs_frame_id == frame_index;
       if (has_detected_cuboid)  // prepare object measurement   not all frame
                                 // has observation!!
@@ -838,7 +839,7 @@ void incremental_build_graph_quadric(
   //  calib << 535.4, 0, 320.1,  // for TUM cabinet data.
   //      0, 539.2, 247.6, 0, 0, 1;
   calib << 520.9, 0, 325.1, 0, 521.0, 249.7, 0, 0, 1;
-  const int total_frame_number = truth_frame_poses.rows();
+  const int total_frame_number = int(truth_frame_poses.rows());
 
   // graph optimization.
   //  perfect association
@@ -862,8 +863,8 @@ void incremental_build_graph_quadric(
 
   // int offline_cube_obs_row_id = 0; //used in offline mode
 
-  std::vector<tracking_frame_quadric*> all_frames;
-  std::vector<Quadric_landmark*> all_landmark;
+  std::vector<std::shared_ptr<tracking_frame_quadric>> all_frames;
+  std::map<int, std::shared_ptr<Quadric_landmark>> all_landmark;
   int totall_landmark = 0;
   int vertexID = 0;
   int edgeID = 0;
@@ -903,9 +904,7 @@ void incremental_build_graph_quadric(
       //          (odom_val * prev_pose_Tcw)
       //              .inverse();  // predict cam position using last transition
     }
-
-    tracking_frame_quadric* currframe = new tracking_frame_quadric();
-    currframe->frame_seq_id = frame_index;
+    auto currframe = std::make_shared<tracking_frame_quadric>(frame_index);
     all_frames.push_back(currframe);
 
     char frame_index_c[256];
@@ -946,9 +945,9 @@ void incremental_build_graph_quadric(
         temp(3) = height;
 
         cout << "detect_result_bbox" << temp << endl;
-        Detection_result* tempDR =
-            new Detection_result(temp.head(5), frame_index);
-        currframe->detect_result.push_back(tempDR);
+        auto tempDR =
+            std::make_shared<Detection_result>(temp.head(5), frame_index);
+        currframe->detect_results.push_back(tempDR);
 
         cout << "data association" << endl;
         int associaId = -1;
@@ -956,29 +955,31 @@ void incremental_build_graph_quadric(
 
         for (auto landmark = all_landmark.begin();
              landmark != all_landmark.end(); ++landmark) {
-          const double pro =
-              dps[(*landmark)->class_id]->calProb((*landmark)->landmark_id) *
-              (*landmark)->ds->calProb(
-                  int(temp(5))) /* *calPositionPro */;  // Todo:
+          const double pro = dps[landmark->second->class_id]->calProb(
+                                 landmark->second->totall_id) *
+                             landmark->second->ds.calProb(
+                                 int(temp(5))) /* *calPositionPro */;  // Todo:
           if (pro > maxPro) {
             maxPro = pro;
-            associaId = (*landmark)->totall_id;
+            associaId = landmark->second->totall_id;
           }
         }
         if (maxPro <
             dps[int(temp(5))]->calProb(dps[int(temp(5))]->totallClass)) {
-          Quadric_landmark* newLandmark = new Quadric_landmark(totall_landmark);
+          auto newLandmark =
+              std::make_shared<Quadric_landmark>(totall_landmark);
           newLandmark->class_id = int(temp(5));
           tempDR->total_id = totall_landmark;
+          all_landmark.insert(pair<int, std::shared_ptr<Quadric_landmark>>(
+              totall_landmark, newLandmark));
           totall_landmark++;
-          all_landmark.push_back(newLandmark);
           newLandmark->landmark_id = dps[newLandmark->class_id]->totallClass;
           dps[newLandmark->class_id]->newClass();
         } else {
-          all_landmark[associaId]->ds->update(temp(5));
+          all_landmark[associaId]->ds.update(int(temp(5)));
           int maxCoee;
           double maxPro;
-          all_landmark[associaId]->ds->maxPro(maxCoee, maxPro);
+          all_landmark[associaId]->ds.maxPro(maxCoee, maxPro);
           if (maxCoee != all_landmark[associaId]->class_id) {
             dps[maxCoee]->newClass();
             dps[all_landmark[associaId]->class_id]->update(
@@ -1037,10 +1038,11 @@ void incremental_build_graph_quadric(
 
     cout << "set up g2o camera vertex" << endl;
     // set up g2o camera vertex
-    g2o::VertexSE3Expmap* vSE3 = new g2o::VertexSE3Expmap();
+    std::shared_ptr<g2o::VertexSE3Expmap> vSE3 =
+        std::make_shared<g2o::VertexSE3Expmap>();  // Todo: delete
     currframe->pose_vertex = vSE3;
     vSE3->setId(vertexID++);
-    graph.addVertex(vSE3);
+    graph.addVertex(vSE3.get());
     vSE3->setEstimate(
         curr_cam_pose_Twc
             .inverse());  // g2o vertex usually stores world to camera pose.
@@ -1051,9 +1053,9 @@ void incremental_build_graph_quadric(
     if (frame_index > 0) {
       g2o::EdgeSE3Expmap* e = new g2o::EdgeSE3Expmap();
       e->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex*>(
-                          all_frames[frame_index - 1]->pose_vertex));
+                          all_frames[frame_index - 1]->pose_vertex.get()));
       e->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex*>(
-                          all_frames[frame_index]->pose_vertex));
+                          all_frames[frame_index]->pose_vertex.get()));
       e->setMeasurement(odom_val);
 
       e->setId(edgeID++);
@@ -1078,71 +1080,69 @@ void incremental_build_graph_quadric(
     // update landmark
     bool landmarkUpdate = false;  // if find now consrtain
 
-    for (auto bbox = currframe->detect_result.begin();
-         bbox != currframe->detect_result.end(); ++bbox)
-      for (auto landmark = all_landmark.begin(); landmark != all_landmark.end();
-           ++landmark)
-        if ((*landmark)->totall_id == (*bbox)->total_id) {
-          (*landmark)->quadric_tracking.push_back(*bbox);
-          vector<Eigen::Matrix<double, 3, 4>,
-                 Eigen::aligned_allocator<Eigen::Matrix<double, 3, 4>>>
-              projection_matrix;
+    for (auto bbox = currframe->detect_results.begin();
+         bbox != currframe->detect_results.end(); ++bbox) {
+      auto landmark = all_landmark.find((*bbox)->total_id);
+      landmark->second->quadric_tracking.push_back(*bbox);
+      vector<Eigen::Matrix<double, 3, 4>,
+             Eigen::aligned_allocator<Eigen::Matrix<double, 3, 4>>>
+          projection_matrix;
 
-          for (auto matrix = (*landmark)->quadric_tracking.begin();
-               matrix != (*landmark)->quadric_tracking.end(); ++matrix) {
-            projection_matrix.push_back(
-                all_frames[(*matrix)->frame_seq_id]
-                    ->cam_pose_Tcw.to_homogeneous_matrix()
-                    .block(0, 0, 3, 4));
-          }
-          cout << "start quadric detection" << endl;
-          (*landmark)->quadric_detection(calib, projection_matrix);
-          cout << "end quadric detection" << endl;
-          if ((*landmark)->isDetected == NEW_QUADRIC) {  // new v
-            cout << "new quadric vertex" << endl;
-            graph.addVertex((*landmark)->quadric_vertex);
-            (*landmark)->quadric_vertex->setId(vertexID++);
+      for (auto matrix = landmark->second->quadric_tracking.begin();
+           matrix != landmark->second->quadric_tracking.end(); ++matrix) {
+        projection_matrix.push_back(all_frames[(*matrix)->frame_seq_id]
+                                        ->cam_pose_Tcw.to_homogeneous_matrix()
+                                        .block(0, 0, 3, 4));
+      }
+      cout << "start quadric detection" << endl;
+      landmark->second->quadric_detection(calib, projection_matrix);
+      cout << "end quadric detection" << endl;
+      if (landmark->second->isDetected == NEW_QUADRIC) {  // new v
+        cout << "new quadric vertex" << endl;
+        graph.addVertex(landmark->second->quadric_vertex.get());
+        landmark->second->quadric_vertex->setId(vertexID++);
 
-            for (auto deteResult = (*landmark)->quadric_tracking.begin();
-                 deteResult != (*landmark)->quadric_tracking.end();
-                 ++deteResult) {
-              g2o::EdgeSE3QuadricProj* e = new g2o::EdgeSE3QuadricProj();
-              e->calib = calib;
-              e->setVertex(
-                  0, dynamic_cast<g2o::OptimizableGraph::Vertex*>(
-                         all_frames[(*deteResult)->frame_seq_id]->pose_vertex));
-              e->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex*>(
-                                  (*landmark)->quadric_vertex));
-              e->setMeasurement((*deteResult)->bbox);
-              e->setId(edgeID++);
-              Vector4d inv_sigma;
-              inv_sigma << 1, 1, 1, 1;
-              inv_sigma = inv_sigma * 1.0 * (*landmark)->meas_quality *
-                          (*deteResult)->prop;
-              Matrix4d info = inv_sigma.cwiseProduct(inv_sigma).asDiagonal();
-              e->setInformation(info);
-              graph.addEdge(e);
-            }
-          } else if ((*landmark)->isDetected == UPDATE_QUADRIC) {
-            landmarkUpdate = true;
-            cout << "update quadric vertex" << endl;
-            g2o::EdgeSE3QuadricProj* e = new g2o::EdgeSE3QuadricProj();
-            e->calib = calib;
-            e->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex*>(
-                                currframe->pose_vertex));
-            e->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex*>(
-                                (*landmark)->quadric_vertex));
-            e->setMeasurement((*bbox)->bbox);
-            e->setId(edgeID++);
-            Vector4d inv_sigma;
-            inv_sigma << 1, 1, 1, 1;
-            inv_sigma =
-                inv_sigma * 1.0 * (*landmark)->meas_quality * (*bbox)->prop;
-            Matrix4d info = inv_sigma.cwiseProduct(inv_sigma).asDiagonal();
-            e->setInformation(info);
-            graph.addEdge(e);
-          }
+        for (auto deteResult = landmark->second->quadric_tracking.begin();
+             deteResult != landmark->second->quadric_tracking.end();
+             ++deteResult) {
+          auto e = std::make_shared<g2o::EdgeSE3QuadricProj>();
+          e->calib = calib;
+          e->setVertex(
+              0,
+              dynamic_cast<g2o::OptimizableGraph::Vertex*>(
+                  all_frames[(*deteResult)->frame_seq_id]->pose_vertex.get()));
+          e->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex*>(
+                              landmark->second->quadric_vertex.get()));
+          e->setMeasurement((*deteResult)->bbox);
+          e->setId(edgeID++);
+          Vector4d inv_sigma;
+          inv_sigma << 1, 1, 1, 1;
+          inv_sigma = inv_sigma * 1.0 * landmark->second->meas_quality *
+                      (*deteResult)->prop;
+          Matrix4d info = inv_sigma.cwiseProduct(inv_sigma).asDiagonal();
+          e->setInformation(info);
+          graph.addEdge(e.get());
         }
+      } else if (landmark->second->isDetected == UPDATE_QUADRIC) {
+        landmarkUpdate = true;
+        cout << "update quadric vertex" << endl;
+        auto e = std::make_shared<g2o::EdgeSE3QuadricProj>();
+        e->calib = calib;
+        e->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex*>(
+                            currframe->pose_vertex.get()));
+        e->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex*>(
+                            landmark->second->quadric_vertex.get()));
+        e->setMeasurement((*bbox)->bbox);
+        e->setId(edgeID++);
+        Vector4d inv_sigma;
+        inv_sigma << 1, 1, 1, 1;
+        inv_sigma =
+            inv_sigma * 1.0 * landmark->second->meas_quality * (*bbox)->prop;
+        Matrix4d info = inv_sigma.cwiseProduct(inv_sigma).asDiagonal();
+        e->setInformation(info);
+        graph.addEdge(e.get());
+      }
+    }
 
     cout << "do optimization" << endl;
     // do optimization!
@@ -1161,8 +1161,9 @@ void incremental_build_graph_quadric(
     cout << "update quadric" << endl;
     for (auto landmark = all_landmark.begin(); landmark != all_landmark.end();
          ++landmark) {
-      if ((*landmark)->isDetected != NO_QUADRIC)
-        (*landmark)->Quadric_meas = (*landmark)->quadric_vertex->estimate();
+      if (landmark->second->isDetected != NO_QUADRIC)
+        landmark->second->Quadric_meas =
+            landmark->second->quadric_vertex->estimate();
     }
 
     cout << "finished frame " << frame_index << endl;
@@ -1172,7 +1173,7 @@ void incremental_build_graph_quadric(
   cout << "landmark size: " << all_landmark.size() << endl;
   cout << "truth_frame_poses.size: " << truth_frame_poses.size() << endl;
   cout << "all_frames.size: " << all_frames.size() << endl;
-  assert(all_frames.size() == truth_frame_poses.rows());
+  assert(int(all_frames.size()) == int(truth_frame_poses.rows()));
   publish_all_poses_quadric(all_frames, truth_frame_poses, all_landmark);
 }
 int main(int argc, char* argv[]) {

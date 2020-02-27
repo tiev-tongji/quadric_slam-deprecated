@@ -7,8 +7,8 @@
 
 #include "distribution.hpp"
 
-const double QUALITY_THRESHOLD = 0.5;
-const int TOTALL_CLASS = 10;  // class of detection
+constexpr double QUALITY_THRESHOLD = 0.5;
+constexpr int TOTALL_CLASS = 10;  // class of detection
 
 class Detection_result {
  public:
@@ -17,11 +17,10 @@ class Detection_result {
   int total_id;
   int frame_seq_id;
 
-  Detection_result(Vector5d raw_2d_objs, int input_frame_seq_id) {
-    bbox = raw_2d_objs.head(4);
-    prop = raw_2d_objs(4);
-    frame_seq_id = input_frame_seq_id;
-  }
+  Detection_result(Vector5d raw_2d_objs, int input_frame_seq_id)
+      : bbox(raw_2d_objs.head(4)),
+        prop(raw_2d_objs(4)),
+        frame_seq_id(input_frame_seq_id) {}
 };
 
 enum DETECT_RESULT { NO_QUADRIC, NEW_QUADRIC, UPDATE_QUADRIC };
@@ -29,20 +28,24 @@ enum DETECT_RESULT { NO_QUADRIC, NEW_QUADRIC, UPDATE_QUADRIC };
 class Quadric_landmark {
  public:
   g2o::Quadric Quadric_meas;  // cube_value
-  g2o::VertexQuadric* quadric_vertex;
+  std::shared_ptr<g2o::VertexQuadric> quadric_vertex;
   double meas_quality = 0.6;  // [0,1] the higher, the better
-  std::vector<Detection_result*> quadric_tracking;
-  DETECT_RESULT isDetected;  //
+  std::vector<std::shared_ptr<Detection_result>> quadric_tracking;
   int class_id;
   int totall_id;
+  DETECT_RESULT isDetected;  //
   int landmark_id;
   double classPro;
-  ds::CatDS* ds;
+  ds::CatDS ds;
 
-  Quadric_landmark(int totall_id) : totall_id(totall_id) {
-    isDetected = NO_QUADRIC;
-    ds = new ds::CatDS(TOTALL_CLASS);
-  }
+  Quadric_landmark(int totall_id)
+      : class_id(-1),
+        totall_id(totall_id),
+        isDetected(NO_QUADRIC),
+        classPro(0),
+        ds(ds::CatDS(TOTALL_CLASS)) {}
+  Quadric_landmark(const Quadric_landmark&) = delete;
+  Quadric_landmark& operator=(const Quadric_landmark&) = delete;
 
   void quadric_detection(
       const Eigen::Matrix<double, 3, 3>& calib,
@@ -54,8 +57,8 @@ class Quadric_landmark {
       cout << "quadric has been detected" << endl;
       isDetected = UPDATE_QUADRIC;
       // update class of landmark
-      ds->update(quadric_tracking.back()->total_id);
-      ds->maxPro(class_id, classPro);
+      ds.update(quadric_tracking.back()->total_id);
+      ds.maxPro(class_id, classPro);
       return;
     }
     if (quadric_tracking.size() < 20) {
