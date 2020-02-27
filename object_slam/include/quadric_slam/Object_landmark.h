@@ -120,7 +120,7 @@ class Quadric_landmark {
       //      cout << "minimalVector" << minimalVector << endl;
       //      cout << "Quadric_meas.pose " << Quadric_meas.pose << endl;
       //      cout << "Quadric_meas.scale " << Quadric_meas.scale << endl;
-      quadric_vertex = new g2o::VertexQuadric();
+      quadric_vertex = std::make_shared<g2o::VertexQuadric>();
       quadric_vertex->setEstimate(Quadric_meas);
 
       //      cout << "detection  result: NEW_QUADRIC" << minimalVector << endl;
