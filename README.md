@@ -1,4 +1,5 @@
-# Quadric SLAM With Probabolistic DataAssociation
+# deprecated
+# Quadric SLAM With Probabolistic DataAssociation 
 
 Attention: This project is under construction, so it may NOT work well. Contact us freely if you have questions.
 
